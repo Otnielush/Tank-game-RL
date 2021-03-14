@@ -8,11 +8,27 @@ class TankGame():
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.generate_map()
+        self.map_generate()
 
 
-    def generate_map(self):
-        self.map = np.zeros((self.width, self.height))
+        # SCORES
+        self.score_win          = 5
+        self.score_hit          = 1
+        self.score_kill         = 2
+        self.score_death        = -2
+        self.score_kill_assist  = 1
+        self.score_exploring    = 1
+
+
+
+
+    def map_generate(self):
+        # each layer of map mean:
+        # 0 - obstacles (0 - road, 0.2 - bushes, 0.4 - desert, 0.6 - forest, 0.8 - swamp, 1 - rock ) + wall
+        # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
+        # 2 - blue team with same types
+        # LAST -  fog of war (not sending)
+        self.map = np.zeros((self.width, self.height, 4))
 
 
     def reset(self, width=0, height=0, team_size=1):
@@ -20,7 +36,7 @@ class TankGame():
             width = self.width
             height = self.height
 
-        self.generate_map()
+        self.map_generate()
 
         return self.map
 
