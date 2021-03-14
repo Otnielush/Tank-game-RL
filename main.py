@@ -7,4 +7,3 @@ g.sing()
 
 
 print(pl.player_RL)
-
