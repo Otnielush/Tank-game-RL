@@ -24,6 +24,7 @@ class TankGame():
         self.score_win          = 5
         self.score_hit          = 1
         self.score_kill         = 2
+        self.score_dmg          = 0.01
         self.score_death        = -2
         self.score_kill_assist  = 1
         self.score_exploring    = 1
@@ -38,9 +39,10 @@ class TankGame():
         # 0 - obstacles (0 - land, 0.2 - bushes, 0.4 - desert, 0.6 - forest, 0.8 - swamp, 1 - rock ) + wall
         # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
         # 2 - blue team with same types
-        # Bullets
+        # 3 Bullets
+        # 4 Collision layer for non movable elements
         # LAST -  fog of war (not sending)
-        self.map = np.zeros((self.height*self.PIXELS_IN_CELL, self.width*self.PIXELS_IN_CELL, 4))
+        self.map = np.zeros((self.height*self.PIXELS_IN_CELL, self.width*self.PIXELS_IN_CELL, 6))
         M = self.PIXELS_IN_CELL
 
 

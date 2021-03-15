@@ -1,16 +1,22 @@
+import numpy as np
 
-
-tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'repairer', 'heavy', 'base']
-tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition']
-t_simple        = [100,   20,       2,              5,             1,          20,          30,         'common',       10,             7,          2,              50]
+tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
+tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition']
+t_simple        = [100,   20,       2,              5,             1,          20,          30,         'normal',       10,             7,          2,              50]
 
 
 class Tank():
-    def __init__(self, id, tank_type):
+    def __init__(self, id, tank_type, x, y):
+        self.X = x
+        self.Y = y
         self.id = id
         self.type = tank_type
         self.speed = 0
-        self.direction_tank = 0  # Where body of tank looking. 0 - up, 90 - right, 180 - down, 270 - left. Or with minus
+        self.speed_x = np.float(0)
+        self.speed_y = np.float(0)
+        self.speed_YX = np.array([self.speed_y, self.speed_x], dtype=np.float)
+        self.pos_YX = np.array([self.Y, self.X], dtype=np.float)
+        self.direction_tank = 0  # Where body of tank looking. 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
         self.direction_tower = 0  # 0 - same direction with body. More 0 - rotation right. Less 0 - rotation left
 
         for (key, value) in zip(tank_features, t_simple):
@@ -18,10 +24,25 @@ class Tank():
 
     def __str__(self):
         atts = self.__dict__
-        return '\n'.join([str(x)+': '+str(self.__dict__[x]) for x in atts])
+        return 'Tank\n'+'\n'.join([str(x)+': '+str(self.__dict__[x]) for x in atts])
 
 
-# TODO: Now creating only simple type of tank. Need to add more types
+    # collision map layer, accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)
+    def move(self, coll_map, accelerate, turn_body, turn_tower, shot, skill):
+
+        new_YX = self.pos_YX + self.speed_YX
+        if coll_map[new_YX[0], new_YX[1]] > 1:
+            pass
+        else:
+            self.pos_YX = new_YX
+
+
+
+
+
+# TODO: 1. Now creating only simple type of tank. Need to add more types.
+#  2. Add flame tank
+#  3. Finish move method
 
 
 
