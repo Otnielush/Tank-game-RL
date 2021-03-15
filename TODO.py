@@ -10,5 +10,7 @@
 #  to all players and receive actions from them. Save received actions for each player and do this action
 #  if changed action as do newer. Or do nothing untill action received. We can broadcast to Global variables
 
+# TODO DONE: "net connection" - broadcasting
+
 # TODO: 1. Make visiulization for game by pygame
 # TODO: 2. game engine (doing now)
