@@ -8,6 +8,7 @@ class player_AI(net_connection):
         self.connection = 0
         self.env = 0
         self.tank_type = ''
+        print("hi")
         print(("Hello"))
 
         if difficulty == 1:
