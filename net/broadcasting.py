@@ -21,6 +21,7 @@ class net_connection():
 
     # input id player, (width, height, num layers)
     def send_env_to_players(self, id, data):
+        print("Otniel how are you?")
         self.data_from_server[id] = data
 
     # player asking for envinronment
