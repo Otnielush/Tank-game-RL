@@ -16,11 +16,11 @@ class connection():
         # after getting action need to zeroing?
         # if disconnected - stop
         # backwards - repeating last action
-        self.deleting_last_action = True if deleting_last_action else False
+        self.deleting_last_action = deleting_last_action
 
-    # input (id player, width, height, num layers)
-    def send_env_to_players(self, data):
-        self.data_from_server = data
+    # input id player, (width, height, num layers)
+    def send_env_to_players(self, id, data):
+        self.data_from_server[id] = data
 
     # player asking for envinronment
     def get_env_from_server(self, id):
@@ -32,11 +32,12 @@ class connection():
 
     # server receive actions from players
     def get_actions(self):
+        data = self.data_from_players
         if self.deleting_last_action:
-            self.data_from_server = np.zeros((self.team_size*2,) + self.env_size)
+            # self.data_from_server = np.zeros((self.team_size*2,) + self.env_size)
             self.data_from_players = np.zeros((self.team_size*2,) + self.act_size)
 
-        return self.data_from_players
+        return data
 
     def __str__(self):
         return 'team size: {}, deleting last action? {}\nenv size: {}\naction size: {}'.format(
