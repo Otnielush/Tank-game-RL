@@ -2,22 +2,23 @@ import numpy as np
 from collections import deque
 import random
 from copy import copy
-from tank.tank_object import tank_type
+from tank.tank_object import tank_type, Tank
+from net.broadcasting import net_connection
 
 # game object
 class TankGame():
 
-    def __init__(self, height, width, team_size):
+    def __init__(self):
         self.PIXELS_IN_CELL = 5
-        self.team_size = team_size
-        self.width = width
-        self.height = height
+        self.team_size = 0
+        self.width = 0
+        self.height = 0
         self.map_obs = ['land', 'bush', 'desert', 'forest', 'water', 'swamp', 'wall', 'rock']
         self.map_obs_d = {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}  # Dictionary for obstacles
         self.tank_type_d = {t[0]:t[1] for t in zip(tank_type, np.linspace(0, 1, len(tank_type)))}
-
-        self.map_generate()
-        self.build_collision_map()
+        self.team1 = [] # [Tank]
+        self.team2 = []
+        self.connection = 0
 
 
         # SCORES
@@ -29,6 +30,20 @@ class TankGame():
         self.score_kill_assist  = 1
         self.score_exploring    = 1
         self.friendly_fire      = -1
+
+
+    # start new round with array of connected players [player, ...]
+    # id starts from 101
+    def new_game(self, height, width, team1_tanks, team2_tanks):
+        self.width = width
+        self.height = height
+        self.team1 = [Tank(t.id, t.name, t.tank_type, 0, 0) for t in team1_tanks]
+        self.team2 = [Tank(t.id, t.name, t.tank_type, 0, 0) for t in team2_tanks]
+
+        self.map_generate()
+        self.build_collision_map()
+        num_players = len(self.team1)+len(self.team2)
+        self.connection = net_connection(num_players, False, (num_players, height, width, 4), (num_players, 5))
 
 
     def build_collision_map(self):
@@ -65,6 +80,7 @@ class TankGame():
         del(free_cells)
 
         # [0, 1] 0 - y place on map, 1 - layer on map for team
+        # TODO: rebuild
         team = [[0, 1], [self.height-1, 2]]
         for i in range(2):
             for j in range(self.team_size):

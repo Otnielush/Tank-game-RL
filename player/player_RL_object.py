@@ -4,6 +4,7 @@ from numpy import argmax
 
 # Main RL player
 # input neural network model
+# TODO: take parent from AI and write action function for RL
 class player_RL():
     def __init__(self, id, model ):
         self.id = id

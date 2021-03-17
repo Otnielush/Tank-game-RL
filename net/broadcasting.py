@@ -4,15 +4,16 @@
 import numpy as np
 
 
+
 # env_size = (x, y, z,...)
 # act_size = (x, y, z,...)
-class connection():
-    def __init__(self, team_size, deleting_last_action, env_size, act_size):
-        self.team_size = team_size
+class net_connection():
+    def __init__(self, num_players, deleting_last_action, env_size, act_size):
+        self.num_players = num_players
         self.env_size = env_size
         self.act_size = act_size
-        self.data_from_server = np.zeros((team_size*2,) + env_size)
-        self.data_from_players = np.zeros((team_size*2,) + act_size)
+        self.data_from_server = np.zeros((num_players,) + env_size)
+        self.data_from_players = np.zeros((num_players,) + act_size)
         # after getting action need to zeroing?
         # if disconnected - stop
         # backwards - repeating last action
@@ -35,12 +36,27 @@ class connection():
         data = self.data_from_players
         if self.deleting_last_action:
             # self.data_from_server = np.zeros((self.team_size*2,) + self.env_size)
-            self.data_from_players = np.zeros((self.team_size*2,) + self.act_size)
+            self.data_from_players = np.zeros((self.num_players * 2,) + self.act_size)
 
         return data
 
     def __str__(self):
-        return 'team size: {}, deleting last action? {}\nenv size: {}\naction size: {}'.format(
-            self.team_size, self.deleting_last_action, self.env_size, self.act_size
+        return 'number of players: {}, deleting last action? {}\nenv size: {}\naction size: {}'.format(
+            self.num_players, self.deleting_last_action, self.env_size, self.act_size
         )
 
+
+# Class for connected player waiting for game
+class waiting_room():
+    def __init__(self):
+        self.players = []
+        self.start_id = 101
+
+    def connect(self, name):
+        id = self.start_id + len(self.players)
+        self.players.append([id, name, 'simple'])
+
+        return id
+
+    def change_tank_type(self, id, type):
+        self.players[id - 101][2] = type

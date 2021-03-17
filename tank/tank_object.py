@@ -6,7 +6,8 @@ t_simple        = [100,   20,       2,              5,             1,          2
 
 
 class Tank():
-    def __init__(self, id, tank_type, x, y):
+    def __init__(self, id, name, tank_type, x, y):
+        self.name = name
         self.X = x
         self.Y = y
         self.width = 1
