@@ -1,4 +1,5 @@
 import numpy as np
+from video.graphics import FRAME_RATE
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition']
@@ -6,14 +7,16 @@ t_simple        = [100,   20,       2,              5,             1,          2
 
 
 class Tank():
-    def __init__(self, id, name, tank_type, x, y):
-        self.name = name
+    def __init__(self, id_game, player, x, y):
+        self.player = player
+        self.name = player.name
         self.X = x
         self.Y = y
         self.width = 1
         self.height = 1
-        self.id = id
-        self.type = tank_type
+        self.id_game = id_game
+        self.id_player = player.id_connection
+        self.type = player.tank_type
         self.speed = 0
         self.speed_x = np.float(0)
         self.speed_y = np.float(0)
@@ -21,6 +24,8 @@ class Tank():
         self.pos_YX = np.array([self.Y, self.X], dtype=np.float)
         self.direction_tank = 0  # Where body of tank looking. 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
         self.direction_tower = 0  # 0 - same direction with body. More 0 - rotation right. Less 0 - rotation left
+        self.reloading_ammo = 0  # seconds left
+        self.reloading_skill = 0
 
         for (key, value) in zip(tank_features, t_simple):
             self.__dict__[key] = value
@@ -59,10 +64,21 @@ class Tank():
         else:
             self.pos_YX = new_YX
 
+        # Calculation for each move
+        tick = (1/FRAME_RATE)
+        if self.reloading_ammo > 0: self.reloading_ammo -= tick
+        else: self.reloading_ammo = 0.0
+        if self.reloading_skill > 0: self.reloading_skill -= tick
+        else: self.reloading_skill = 0.0
 
         return self.id, shot, skill
 
+    def shot(self):
+        self.reloading_ammo = self.reload_ammo
+        self.ammunition -= 1
 
+    def use_skill(self):
+        self.reloading_skill = self.reload_skill
 
 
 

@@ -6,6 +6,7 @@ from tank.tank_object import tank_type, Tank
 from net.broadcasting import net_connection
 
 # game object
+# Steps: create, new_game
 class TankGame():
 
     def __init__(self):
@@ -19,6 +20,7 @@ class TankGame():
         self.team1 = [] # [Tank]
         self.team2 = []
         self.connection = 0
+
 
 
         # SCORES
@@ -37,13 +39,41 @@ class TankGame():
     def new_game(self, height, width, team1_tanks, team2_tanks):
         self.width = width
         self.height = height
-        self.team1 = [Tank(t.id, t.name, t.tank_type, 0, 0) for t in team1_tanks]
-        self.team2 = [Tank(t.id, t.name, t.tank_type, 0, 0) for t in team2_tanks]
+
+        self.team1 = [] # [Tank]
+        self.team2 = []
+        id = 101
+        num_players = len(self.team1) + len(self.team2)
+        self.connection = net_connection(num_players, False, (num_players, height, width, 4), 2,(num_players, 5))
+
+        # Creating object Tank for players and sending connection
+        for i in range(len(team1_tanks)):
+            self.team1.append(Tank(id, team1_tanks[i], 0, 0))
+            team1_tanks[i].change_id(id_game=id)
+            self.team1[i].player.connected_new_game(self.connection)
+            id += 1
+        for i in range(len(team2_tanks)):
+            self.team2.append(Tank(id, team2_tanks[i], 0, 0))
+            team2_tanks[i].change_id(id_game=id)
+            self.team2[i].connected_new_game(self.connection)
+            id += 1
+
 
         self.map_generate()
         self.build_collision_map()
-        num_players = len(self.team1)+len(self.team2)
-        self.connection = net_connection(num_players, False, (num_players, height, width, 4), (num_players, 5))
+
+        # sending ENV to network connection
+        env_team1 = self.build_env_map_team(1)
+        for i in range(len(self.team1)):
+            self.connection.send_env_to_players(self.team1[i].id_game, env_team1,
+                    [self.team1[i].hp, self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
+        env_team2 = self.build_env_map_team(2)
+        for i in range(len(self.team2)):
+            self.connection.send_env_to_players(self.team2[i].id_game, env_team2,
+                                                [self.team2[i].hp, self.team2[i].speed, self.team2[i].reloading_ammo,
+                                                 self.team2[i].reloading_skill, self.team2[i].ammunition])
+
+
 
 
     def build_collision_map(self):
@@ -54,7 +84,7 @@ class TankGame():
         # 0 - obstacles {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
         # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
         # 2 - blue team with same types
-        # 3 Bullets
+        # 3 - Bullets
         # LAST -  fog of war (not sending)
         self.map = np.zeros((self.height*self.PIXELS_IN_CELL, self.width*self.PIXELS_IN_CELL, 5))
         M = self.PIXELS_IN_CELL
@@ -100,7 +130,7 @@ class TankGame():
 
 
 
-
+# NOT NEEDED
     def reset(self, width=0, height=0, team_size=0):
         if team_size != 0:
             self.team_size = team_size

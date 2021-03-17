@@ -1,9 +1,10 @@
 from net.broadcasting import net_connection
 
-
+# Steps: create object, change_tank_type, new game -> connected_new_game
 class player_AI(net_connection):
     def __init__(self, name, difficulty=1):
-        self.id = 0
+        self.id_connection = 0
+        self.id_game = 0
         self.name = name
         self.connection = 0
         self.env = 0
@@ -19,10 +20,15 @@ class player_AI(net_connection):
     def __str__(self):
         return self.id
 
+    # when connected to Waitroom receive id
+    def change_id(self, id_conn=-1, id_game=-1):
+        if id_conn != -1:
+            self.id_connection = id_conn
+        if id_game != -1:
+            self.id_game = id_game
 
     # ID will receive earlier, but now its so
-    def connected_new_game(self, net_connection, id):
-        self.id = id
+    def connected_new_game(self, net_connection):
         self.connection = net_connection
 
     def change_tank_type(self, type):

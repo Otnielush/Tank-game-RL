@@ -8,11 +8,12 @@ import numpy as np
 # env_size = (x, y, z,...)
 # act_size = (x, y, z,...)
 class net_connection():
-    def __init__(self, num_players, deleting_last_action, env_size, act_size):
+    def __init__(self, num_players, deleting_last_action, env_size, data_size, act_size):
         self.num_players = num_players
         self.env_size = env_size
         self.act_size = act_size
-        self.data_from_server = np.zeros((num_players,) + env_size)
+        self.env_from_server = np.zeros((num_players,) + env_size)
+        self.data_from_server = np.zeros((num_players,) + data_size) # hp, speed, time to reload: ammo, skill; ammunition
         self.data_from_players = np.zeros((num_players,) + act_size)
         # after getting action need to zeroing?
         # if disconnected - stop
@@ -20,13 +21,14 @@ class net_connection():
         self.deleting_last_action = deleting_last_action
 
     # input id player, (width, height, num layers)
-    def send_env_to_players(self, id, data):
-        print("Otniel how are you?")
+    # data: hp, speed, time to reload: ammo, skill; ammunition
+    def send_env_to_players(self, id, env, data):
+        self.env_from_server[id] = env
         self.data_from_server[id] = data
 
     # player asking for envinronment
     def get_env_from_server(self, id):
-        return self.data_from_server[id]
+        return self.env_from_server[id], self.data_from_server[id]
 
     # id of player, action
     def send_action(self, id, action):
@@ -47,7 +49,7 @@ class net_connection():
         )
 
 
-# Class for connected player waiting for game
+# Class for connected player waiting for game. NOT DONE
 class waiting_room():
     def __init__(self):
         self.players = []

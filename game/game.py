@@ -1,5 +1,3 @@
 from .decorator_step import TankGame
-from .decorator_sing import TankGame
+from .decorator_build_env_map_team import TankGame
 
-print("Hello, David")
-print('Hi, Otniel')
