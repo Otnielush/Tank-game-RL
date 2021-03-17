@@ -8,6 +8,7 @@ class player_AI(net_connection):
         self.connection = 0
         self.env = 0
         self.tank_type = ''
+        print(("Hello"))
 
         if difficulty == 1:
             self.action_function = lambda x: 1, 0.1, -0.1, False, False   # TODO: write action function for AI
