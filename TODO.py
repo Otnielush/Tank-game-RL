@@ -12,5 +12,8 @@
 
 # TODO DONE: "net connection" - broadcasting
 
+# TODO: How to make collisions? I decided to make collision map with ids on coordinates. If value of cell more 0,
+#  so there is object there with id of value of cell. When object moving he change place of his ids on map.
+
 # TODO: 1. Make visiulization for game by pygame
 # TODO: 2. game engine (doing now)

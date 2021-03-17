@@ -9,6 +9,8 @@ class Tank():
     def __init__(self, id, tank_type, x, y):
         self.X = x
         self.Y = y
+        self.width = 1
+        self.height = 1
         self.id = id
         self.type = tank_type
         self.speed = 0
@@ -26,15 +28,38 @@ class Tank():
         atts = self.__dict__
         return 'Tank\n'+'\n'.join([str(x)+': '+str(self.__dict__[x]) for x in atts])
 
+    def calc_directions(self, turn_body, turn_tower):
+        if turn_body > 1 or turn_body < -1:  # 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
+            turn_body /= 360
+        if turn_tower > 1 or turn_tower < -1:
+            turn_tower /= 360
+        self.direction_tank += turn_body
+        self.direction_tower += turn_tower
+
+    def calc_speed_yx(self):
+        self.speed_YX = [np.cos(self.direction_tank*np.pi*2) * self.speed, np.sin(self.direction_tank*np.pi*2) * self.speed]
+
 
     # collision map layer, accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)
+    # ! Return id, shot, skill
     def move(self, coll_map, accelerate, turn_body, turn_tower, shot, skill):
+        self.calc_directions(turn_body, turn_tower)
+        self.speed += (self.max_speed * accelerate * 0.2)  # 0.2 acceleration / brakes
+        if self.speed > self.max_speed:
+            self.speed = self.max_speed
+        self.calc_speed_yx()
 
         new_YX = self.pos_YX + self.speed_YX
-        if coll_map[new_YX[0], new_YX[1]] > 1:
+        if coll_map[int(new_YX[0]), int(new_YX[1])] > 0:
+
             pass
+
+
         else:
             self.pos_YX = new_YX
+
+
+        return self.id, shot, skill
 
 
 

@@ -17,7 +17,7 @@ class TankGame():
         self.tank_type_d = {t[0]:t[1] for t in zip(tank_type, np.linspace(0, 1, len(tank_type)))}
 
         self.map_generate()
-
+        self.build_collision_map()
 
 
         # SCORES
@@ -31,18 +31,17 @@ class TankGame():
         self.friendly_fire      = -1
 
 
-
-
+    def build_collision_map(self):
+        self.collision_map = np.rint(self.map[:,:,0] - 0.35) # 0.35 keeping only colliding obstacles
 
     def map_generate(self):
         # each layer of map mean:
-        # 0 - obstacles (0 - land, 0.2 - bushes, 0.4 - desert, 0.6 - forest, 0.8 - swamp, 1 - rock ) + wall
+        # 0 - obstacles {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
         # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
         # 2 - blue team with same types
         # 3 Bullets
-        # 4 Collision layer for non movable elements
         # LAST -  fog of war (not sending)
-        self.map = np.zeros((self.height*self.PIXELS_IN_CELL, self.width*self.PIXELS_IN_CELL, 6))
+        self.map = np.zeros((self.height*self.PIXELS_IN_CELL, self.width*self.PIXELS_IN_CELL, 5))
         M = self.PIXELS_IN_CELL
 
 
@@ -57,7 +56,8 @@ class TankGame():
         self.map[(self.height-1)*M:, base_place*M:(base_place+2)*M, 2] = 1
 
         # Adding tanks
-        # TODO Now only simple tank types. Change to different
+        # TODO Now only simple tank types. Change to different.
+        #  Need to Change it with creation of tank objects
         free_cells = set(np.arange(self.width))
         free_cells.remove(base_place)
         free_cells.remove(base_place+1)
