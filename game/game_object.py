@@ -45,7 +45,7 @@ class TankGame():
         ID_START = 101
         self.id_tanks = ID_START
         num_players = len(team1_payers) + len(team2_payers)
-        self.connection = net_connection(num_players, False, (height, width, 4), 5,(5,))
+        self.connection = net_connection(num_players, False, (height, width, 4), 9, (5,))
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_payers)):
@@ -67,12 +67,13 @@ class TankGame():
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
             self.connection.send_env_to_players(self.team1[i].id_game - ID_START, env_team1,
-                    [self.team1[i].hp, self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
+                    [self.team1[i].Y, self.team1[i].X, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
+                     self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
             self.connection.send_env_to_players(self.team2[i].id_game - ID_START, env_team2,
-                                                [self.team2[i].hp, self.team2[i].speed, self.team2[i].reloading_ammo,
-                                                 self.team2[i].reloading_skill, self.team2[i].ammunition])
+                    [self.team2[i].Y, self.team2[i].X, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
+                     self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition])
 
 
 
@@ -87,19 +88,24 @@ class TankGame():
         # 2 - blue team with same types
         # 3 - Bullets
         # LAST -  fog of war (not sending)
-        self.map = np.zeros((self.height*self.PIXELS_IN_CELL, self.width*self.PIXELS_IN_CELL, 5))
         M = self.PIXELS_IN_CELL
+        self.map = np.zeros((self.height*M, self.width*M, 5))  # map for game/collision/video
+        self.map_env = np.zeros((self.height, self.width, 5))  # map for input AI players
 
 
         # Adding obstacles randomly on map. 2 lines from team sides is free (land)
         for y in np.arange(2, self.height - 2, 1):
             for x in range(self.width):
-                self.map[y*M:(y+1)*M, x*M:(x+1)*M, 0] = self.map_obs_d[random.choice(self.map_obs)]
+                obstacle = self.map_obs_d[random.choice(self.map_obs)]
+                self.map[y*M:(y+1)*M, x*M:(x+1)*M, 0] = obstacle
+                self.map_env[y, x, 0] = obstacle
 
         # base for team (occupy for win) 2 cells
         base_place = int((self.width-1) / 2)
         self.map[0:M, base_place*M:(base_place+2)*M, 1] = 1
         self.map[(self.height-1)*M:, base_place*M:(base_place+2)*M, 2] = 1
+        self.map_env[0:2, base_place:(base_place+2), 1] = 1
+        self.map_env[(self.height-1):, base_place:(base_place+2), 2] = 1
 
         # Adding tanks
         # TODO Now only simple tank types. Change to different.

@@ -19,7 +19,9 @@ print(team1[0])
 Game = gg.TankGame()
 Game.new_game(8, 12, team1, team2)
 
-
+print('l', Game.team1[0].player.name)
+team1[0].name = 'fff'
+print('l', Game.team1[0].player.name)
 
 
 

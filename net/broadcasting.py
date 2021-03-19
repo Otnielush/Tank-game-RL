@@ -13,7 +13,7 @@ class net_connection():
         self.env_size = env_size
         self.act_size = act_size
         self.env_from_server = np.zeros((num_players,) + env_size)
-        self.data_from_server = np.zeros((num_players,) + (data_size,)) # hp, speed, (time to reload: ammo, skill); ammunition
+        self.data_from_server = np.zeros((num_players,) + (data_size,))  # y, x, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill); ammunition
         self.data_from_players = np.zeros((num_players,) + act_size)
         print('env', self.env_from_server.shape)
         print('data s', self.data_from_server.shape)

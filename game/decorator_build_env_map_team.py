@@ -6,3 +6,6 @@ def build_env_map_team(self, team_num):
     return np.ones((self.height, self.width, 4))
 
 setattr(TankGame, 'build_env_map_team', build_env_map_team)
+
+
+# TODO: FIRST build env map for players AND Collision map
