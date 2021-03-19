@@ -9,6 +9,7 @@ a_normal      = [   3,          8,          True,       False,             False
 class Ammo():
     def __init__(self, tank, id, y, x, angle):
         self.parent = tank
+        self.angle = angle
 
         for (key, value) in zip(ammo_features, a_normal):
             self.__dict__[key] = value
@@ -19,8 +20,6 @@ class Ammo():
         self.speed_y = np.cos(angle*np.pi*2) * self.speed
         self.speed_YX = np.array([self.speed_y, self.speed_x], dtype=np.float)
         self.pos_YX = np.array([y, x], dtype=np.float)
-
-
 
         self.id = id
         self.tank_id = tank.id

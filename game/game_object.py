@@ -36,27 +36,28 @@ class TankGame():
 
     # start new round with array of connected players [player, ...]
     # id starts from 101
-    def new_game(self, height, width, team1_tanks, team2_tanks):
+    def new_game(self, height, width, team1_payers, team2_payers):
         self.width = width
         self.height = height
 
         self.team1 = [] # [Tank]
         self.team2 = []
-        id = 101
-        num_players = len(self.team1) + len(self.team2)
-        self.connection = net_connection(num_players, False, (num_players, height, width, 4), 2,(num_players, 5))
+        ID_START = 101
+        self.id_tanks = ID_START
+        num_players = len(team1_payers) + len(team2_payers)
+        self.connection = net_connection(num_players, False, (height, width, 4), 5,(5,))
 
         # Creating object Tank for players and sending connection
-        for i in range(len(team1_tanks)):
-            self.team1.append(Tank(id, team1_tanks[i], 0, 0))
-            team1_tanks[i].change_id(id_game=id)
+        for i in range(len(team1_payers)):
+            self.team1.append(Tank(self.id_tanks, team1_payers[i], 0, 0))
+            team1_payers[i].change_id(id_game=self.id_tanks)
             self.team1[i].player.connected_new_game(self.connection)
-            id += 1
-        for i in range(len(team2_tanks)):
-            self.team2.append(Tank(id, team2_tanks[i], 0, 0))
-            team2_tanks[i].change_id(id_game=id)
-            self.team2[i].connected_new_game(self.connection)
-            id += 1
+            self.id_tanks += 1
+        for i in range(len(team2_payers)):
+            self.team2.append(Tank(self.id_tanks, team2_payers[i], 0, 0))
+            team2_payers[i].change_id(id_game=self.id_tanks)
+            self.team2[i].player.connected_new_game(self.connection)
+            self.id_tanks += 1
 
 
         self.map_generate()
@@ -65,11 +66,11 @@ class TankGame():
         # sending ENV to network connection
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
-            self.connection.send_env_to_players(self.team1[i].id_game, env_team1,
+            self.connection.send_env_to_players(self.team1[i].id_game - ID_START, env_team1,
                     [self.team1[i].hp, self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
-            self.connection.send_env_to_players(self.team2[i].id_game, env_team2,
+            self.connection.send_env_to_players(self.team2[i].id_game - ID_START, env_team2,
                                                 [self.team2[i].hp, self.team2[i].speed, self.team2[i].reloading_ammo,
                                                  self.team2[i].reloading_skill, self.team2[i].ammunition])
 

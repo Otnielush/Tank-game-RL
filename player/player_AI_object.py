@@ -1,7 +1,7 @@
-from net.broadcasting import net_connection
+
 
 # Steps: create object, change_tank_type, new game -> connected_new_game
-class player_AI(net_connection):
+class player_AI():
     def __init__(self, name, difficulty=1):
         self.id_connection = 0
         self.id_game = 0
@@ -9,8 +9,6 @@ class player_AI(net_connection):
         self.connection = 0
         self.env = 0
         self.tank_type = ''
-        print("hi")
-        print(("Hello"))
 
         if difficulty == 1:
             self.action_function = lambda x: 1, 0.1, -0.1, False, False   # TODO: write action function for AI
@@ -18,7 +16,7 @@ class player_AI(net_connection):
             self.action_function = "another function for moving"
 
     def __str__(self):
-        return self.id
+        return "'{}' id_conn: {}, tank: {}".format(self.name, self.id_connection, self.tank_type)
 
     # when connected to Waitroom receive id
     def change_id(self, id_conn=-1, id_game=-1):
