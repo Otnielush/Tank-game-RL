@@ -1,11 +1,10 @@
 from .game_object import TankGame
 import numpy as np
 
-def build_env_map_team(self, team_num):
-    print('Song song song', team_num)
+
+# TODO Don`t need more. Change to smthg usefull
+def some_func(self, team_num):
     return np.ones((self.height, self.width, 4))
 
-setattr(TankGame, 'build_env_map_team', build_env_map_team)
+setattr(TankGame, 'some_func', some_func)
 
-
-# TODO: FIRST build env map for players AND Collision map

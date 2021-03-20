@@ -2,6 +2,8 @@ import numpy as np
 
 
 ammo_types = ['normal', 'rocket', 'bomb', 'jet', 'laser', 'electricity', 'mine', 'none']
+# max_distance - deal 0 dmg, at start - 100%; destroy - can destroy obstacles; artillery_fly - fly over obstacles to target
+# explossion - makes area dmg; expl_range - explossion range
 ammo_features = ['speed', 'max_distance', 'destroy', 'artillery_fly', 'explossion', 'expl_range']  # distance - at start-max dmg, at end-0
 a_normal      = [   3,          8,          True,       False,             False,           0]
 
@@ -25,6 +27,7 @@ class Ammo():
         self.tank_id = tank.id
         self.damage = 1.0  # 100%
         self.distance = 0
+        self.target_YX = [0, 0]  # for artillery_fly = True
 
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-from collections import deque
 import random
 from copy import copy
 from tank.tank_object import tank_type, Tank
@@ -61,7 +60,6 @@ class TankGame():
 
 
         self.map_generate()
-        self.build_collision_map()
 
         # sending ENV to network connection
         env_team1 = self.build_env_map_team(1)
@@ -77,9 +75,18 @@ class TankGame():
 
 
 
+    # TODO: Add fog of war calculation
+    def build_env_map_team(self, team_num):
+        if team_num == 1:
+            return self.map_env
+        else:
+            return self.map_env[:, :, [0, 2, 1, 3]]  # 1- friendly team, 2 - enemy`s team
+
 
     def build_collision_map(self):
-        self.collision_map = np.rint(self.map[:,:,0] - 0.35) # 0.35 keeping only colliding obstacles
+        self.map_coll[:,:,0] = np.rint(self.map[:,:,0] * 4 - 2.35)  #  1 - Wall, 2 - Rock, all other - 0
+        self.map_coll[0:self.PIXELS_IN_CELL, :, 0] = self.map[0:self.PIXELS_IN_CELL, :, 1]  # base team 1
+        self.map_coll[(self.height-1)*self.PIXELS_IN_CELL:, :, 0] = self.map[(self.height-1)*self.PIXELS_IN_CELL:, :, 2]  # base team 2
 
     def map_generate(self):
         # each layer of map mean:
@@ -89,8 +96,9 @@ class TankGame():
         # 3 - Bullets
         # LAST -  fog of war (not sending)
         M = self.PIXELS_IN_CELL
-        self.map = np.zeros((self.height*M, self.width*M, 5))  # map for game/collision/video
-        self.map_env = np.zeros((self.height, self.width, 5))  # map for input AI players
+        self.map = np.zeros((self.height*M, self.width*M, 5))  # map for game/video
+        self.map_env = np.zeros((self.height, self.width, 4))  # map for input AI players  Layers: 0 - obstacles, 1 - friend team, 2 - enemy`s team, 3 - bullets (because of rockets
+        self.map_coll = np.zeros((self.height*M, self.width*M, 3))  # layers: 0-obstacles; 1-moving objects. 2- bullets| All with id numbers. Obstacles ids from 1. Tanks ids from 101++
 
 
         # Adding obstacles randomly on map. 2 lines from team sides is free (land)
@@ -104,8 +112,10 @@ class TankGame():
         base_place = int((self.width-1) / 2)
         self.map[0:M, base_place*M:(base_place+2)*M, 1] = 1
         self.map[(self.height-1)*M:, base_place*M:(base_place+2)*M, 2] = 1
-        self.map_env[0:2, base_place:(base_place+2), 1] = 1
+        self.map_env[0, base_place:(base_place+2), 1] = 1
         self.map_env[(self.height-1):, base_place:(base_place+2), 2] = 1
+
+        self.build_collision_map()
 
         # Adding tanks
         # TODO Now only simple tank types. Change to different.
@@ -116,14 +126,24 @@ class TankGame():
         team_free_cells = [copy(free_cells), copy(free_cells)]
         del(free_cells)
 
-        # [0, 1] 0 - y place on map, 1 - layer on map for team
-        # TODO: rebuild
-        team = [[0, 1], [self.height-1, 2]]
-        for i in range(2):
-            for j in range(self.team_size):
-                tank_place = random.choice(list(team_free_cells[i]))
-                self.map[team[i][0]*M:(team[i][0]+1)*M, tank_place*M:(tank_place+1)*M, team[i][1]] = self.tank_type_d['simple']
-                team_free_cells[i].remove(tank_place)
+
+        #  putting tanks from team 1 to map, layer 1
+        for i in range(len(self.team1)):
+            tank_place = random.choice(list(team_free_cells[0]))
+            self.map[0:M, tank_place * M:(tank_place + 1) * M, 1] = self.tank_type_d[self.team1[i].type]
+            self.map_env[0, tank_place, 1] = self.tank_type_d[self.team1[i].type]
+            self.map_coll[0:M, tank_place * M:(tank_place + 1) * M, 1] = self.team1[i].id_game
+            team_free_cells[0].remove(tank_place)
+        #  team 2 to map, layer 2
+        y_pos = self.height-1
+        for i in range(len(self.team2)):
+            tank_place = random.choice(list(team_free_cells[1]))
+            self.map[y_pos*M:(y_pos+1)*M, tank_place * M:(tank_place + 1) * M, 2] = self.tank_type_d[self.team2[i].type]
+            self.map_env[y_pos, tank_place, 2] = self.tank_type_d[self.team2[i].type]
+            self.map_coll[y_pos*M:(y_pos+1)*M, tank_place * M:(tank_place + 1) * M, 1] = self.team2[i].id_game
+            team_free_cells[1].remove(tank_place)
+
+        del(team_free_cells)
 
 
 
@@ -131,52 +151,6 @@ class TankGame():
 
 
 
-
-
-
-
-
-
-# NOT NEEDED
-    def reset(self, width=0, height=0, team_size=0):
-        if team_size != 0:
-            self.team_size = team_size
-        if width == 0 or height == 0:
-            width = self.width
-            height = self.height
-
-        self.map_generate()
-
-        return self.map
-
-
-
-
-# save all actions and data into game object or may be each player will save it himself
-class ReplayBuffer():
-
-    def __init__(self, max_size):
-        self.max_size = max_size
-        self.transitions = deque()
-
-    def add(self, observation, action, reward, observation2):
-        if len(self.transitions) > self.max_size:
-            self.transitions.popleft()
-        self.transitions.append((observation, action, reward, observation2))
-
-    def sample(self, count):
-        # samples = deque(list(self.transitions)[len(self.transitions)-count:])
-        # self.transitions = deque(list(self.transitions)[:len(self.transitions)-count], self.max_size)
-        # return random.sample(samples, count)
-
-        # return random.sample(self.transitions, count)
-
-        # taking a random part of buffer
-        buffer_start = random.randint(0, len(self.transitions) - count)
-        return deque(itertools.islice(self.transitions, buffer_start, buffer_start + count))
-
-    def size(self):
-        return len(self.transitions)
 
 
 

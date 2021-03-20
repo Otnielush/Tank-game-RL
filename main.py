@@ -25,9 +25,10 @@ print('l', Game.team1[0].player.name)
 
 
 
-plt.imshow(Game.collision_map, cmap='gray')
+plt.imshow(Game.connection.env_from_server[2][:,:,:3])
+plt.show()
 
-
+plt.imshow(Game.map[:,:,:3])
 # plt.imshow(g.map[:,:, :3])
 plt.show()
 

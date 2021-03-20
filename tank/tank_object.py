@@ -1,5 +1,5 @@
 import numpy as np
-from video.graphics import FRAME_RATE
+from video.graphics import FRAME_RATE, MOVES_PER_FRAME
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition']
@@ -65,7 +65,7 @@ class Tank():
             self.pos_YX = new_YX
 
         # Calculation for each move
-        tick = (1/FRAME_RATE)
+        tick = (1/(FRAME_RATE*MOVES_PER_FRAME))
         if self.reloading_ammo > 0: self.reloading_ammo -= tick
         else: self.reloading_ammo = 0.0
         if self.reloading_skill > 0: self.reloading_skill -= tick
