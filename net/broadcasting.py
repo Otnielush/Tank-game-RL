@@ -42,8 +42,7 @@ class net_connection():
     def get_actions(self):
         data = self.data_from_players
         if self.deleting_last_action:
-            # self.data_from_server = np.zeros((self.team_size*2,) + self.env_size)
-            self.data_from_players = np.zeros((self.num_players * 2,) + self.act_size)
+            self.data_from_players = np.zeros((self.num_players,) + self.act_size)
 
         return data
 

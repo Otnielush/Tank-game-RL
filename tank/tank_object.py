@@ -45,26 +45,31 @@ class Tank():
         self.direction_tower += turn_tower
 
     def calc_speed_yx(self):
-        self.speed_YX = [np.cos(self.direction_tank*np.pi*2) * self.speed, np.sin(self.direction_tank*np.pi*2) * self.speed]
+        self.speed_y = np.cos(self.direction_tank*np.pi*2) * self.speed
+        self.speed_x = np.sin(self.direction_tank*np.pi*2) * self.speed
 
 
-    # collision map layer, accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)
-    # ! Return id, shot, skill
-    def move(self, coll_map, accelerate, turn_body, turn_tower, shot, skill):
-        self.calc_directions(turn_body, turn_tower)
-        self.speed += (self.max_speed * accelerate * 0.2)  # 0.2 acceleration / brakes
+    # collision map layer, [accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)]
+    # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
+    # ! Return id, [old YX], shot, skill
+    def move(self, coll_map, actions):
+        self.calc_directions(actions[1], actions[2])
+        self.speed += (self.max_speed * actions[0] * 0.2)  # 0.2 acceleration / brakes
         if self.speed > self.max_speed:
             self.speed = self.max_speed
         self.calc_speed_yx()
 
-        new_YX = self.pos_YX + self.speed_YX
-        if coll_map[int(new_YX[0]), int(new_YX[1])] > 0:
+        old_yx = [self.Y, self.X]
+        new_y = self.Y + self.speed_y
+        new_x = self.X + self.speed_x
+        if sum(coll_map[int(new_y), int(new_x), :]) > 0:
 
             pass
 
 
         else:
-            self.pos_YX = new_YX
+            self.Y = new_y
+            self.X = new_x
 
         # Calculation for each move
         tick = (1/(FRAME_RATE*MOVES_PER_FRAME))
@@ -73,7 +78,12 @@ class Tank():
         if self.reloading_skill > 0: self.reloading_skill -= tick
         else: self.reloading_skill = 0.0
 
-        return self.id, shot, skill
+        if actions[3] and self.reloading_ammo < 0.001:
+            self.shot()
+        if actions[4] and self.reloading_skill < 0.001:
+            self.use_skill()
+
+        return self.id_game, old_yx, actions[3], actions[4]
 
     def shot(self):
         self.reloading_ammo = self.reload_ammo

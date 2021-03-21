@@ -23,8 +23,8 @@ class Ammo():
         self.speed_YX = np.array([self.speed_y, self.speed_x], dtype=np.float)
         self.pos_YX = np.array([y, x], dtype=np.float)
 
-        self.id = id
-        self.tank_id = tank.id
+        self.id_game = id
+        self.tank_id = tank.id_game
         self.damage = 1.0  # 100%
         self.distance = 0
         self.target_YX = [0, 0]  # for artillery_fly = True

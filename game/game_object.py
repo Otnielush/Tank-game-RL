@@ -9,7 +9,7 @@ from net.broadcasting import net_connection
 class TankGame():
 
     def __init__(self):
-        self.PIXELS_IN_CELL = 5
+        self.PIX_CELL = 5
         self.team_size = 0
         self.width = 0
         self.height = 0
@@ -41,8 +41,10 @@ class TankGame():
 
         self.team1 = [] # [Tank]
         self.team2 = []
-        ID_START = 101
-        self.id_tanks = ID_START
+        self.ID_START = 101
+        self.id_tanks = self.ID_START
+        self.bullets = []
+        self.id_b = 200   # id bullets
         num_players = len(team1_payers) + len(team2_payers)
         self.connection = net_connection(num_players, False, (height, width, 4), 9, (5,))
 
@@ -64,18 +66,17 @@ class TankGame():
         # sending ENV to network connection
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
-            self.connection.send_env_to_players(self.team1[i].id_game - ID_START, env_team1,
+            self.connection.send_env_to_players(self.team1[i].id_game - self.ID_START, env_team1,
                     [self.team1[i].Y, self.team1[i].X, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
                      self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
-            self.connection.send_env_to_players(self.team2[i].id_game - ID_START, env_team2,
+            self.connection.send_env_to_players(self.team2[i].id_game - self.ID_START, env_team2,
                     [self.team2[i].Y, self.team2[i].X, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
                      self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition])
 
 
-
-    # TODO: Add fog of war calculation
+    # Making input for players
     def build_env_map_team(self, team_num):
         if team_num == 1:
             map_env = copy(self.map_env[:, :, :4])
@@ -121,8 +122,8 @@ class TankGame():
 
     def build_collision_map(self):
         self.map_coll[:,:,0] = np.rint(self.map[:,:,0] * 4 - 2.35)  #  1 - Wall, 2 - Rock, all other - 0
-        self.map_coll[0:self.PIXELS_IN_CELL, :, 0] = self.map[0:self.PIXELS_IN_CELL, :, 1]  # base team 1
-        self.map_coll[(self.height-1)*self.PIXELS_IN_CELL:, :, 0] = self.map[(self.height-1)*self.PIXELS_IN_CELL:, :, 2]  # base team 2
+        self.map_coll[0:self.PIX_CELL, :, 0] = self.map[0:self.PIX_CELL, :, 1]  # base team 1
+        self.map_coll[(self.height-1)*self.PIX_CELL:, :, 0] = self.map[(self.height - 1) * self.PIX_CELL:, :, 2]  # base team 2
 
     def map_generate(self):
         # each layer of map mean:
@@ -131,7 +132,7 @@ class TankGame():
         # 2 - blue team with same types
         # 3 - Bullets
         # LAST -  fog of war (not sending)
-        M = self.PIXELS_IN_CELL
+        M = self.PIX_CELL
         self.map = np.zeros((self.height*M, self.width*M, 5))  # map for game/video
         self.map_env = np.zeros((self.height, self.width, 4))  # map for input AI players  Layers: 0 - obstacles, 1 - friend team, 2 - enemy`s team, 3 - bullets (because of rockets
         self.map_coll = np.zeros((self.height*M, self.width*M, 3))  # layers: 0-obstacles; 1-moving objects. 2- bullets| All with id numbers. Obstacles ids from 1. Tanks ids from 101++

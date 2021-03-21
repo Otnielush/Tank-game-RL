@@ -20,12 +20,12 @@ team2[2].change_tank_type(t_type); team2[2].change_id(246)
 print(team1[0])
 
 Game = gg.TankGame()
-Game.new_game(7, 12, team1, team2)
+Game.new_game(10, 12, team1, team2)
 
 
 # plt.imshow(Game.team1[0].sight_mask, cmap='gray')
 # plt.show()
-
+Game.step()
 
 plt.imshow(Game.connection.env_from_server[3][:,:,:3])
 plt.show()
