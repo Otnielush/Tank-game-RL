@@ -78,9 +78,45 @@ class TankGame():
     # TODO: Add fog of war calculation
     def build_env_map_team(self, team_num):
         if team_num == 1:
-            return self.map_env
+            map_env = copy(self.map_env[:, :, :4])
+            mask = np.ones(map_env.shape[:2])
+            for i in range(len(self.team1)):
+                start_x = max(self.team1[i].X - self.team1[i].sight_range, 0)
+                end_x = min(self.team1[i].X + self.team1[i].sight_range +1, self.width)
+                start_y = max(self.team1[i].Y - self.team1[i].sight_range, 0)
+                end_y = min(self.team1[i].Y + self.team1[i].sight_range +1, self.height)
+                start_y_m = max(self.team1[i].sight_range - self.team1[i].Y, 0)
+                start_x_m = max(self.team1[i].sight_range - self.team1[i].X, 0)
+                mm = self.team1[i].sight_mask[start_y_m: start_y_m + min(self.height - start_y, self.team1[i].sight_range * 2 + 1 - start_y_m),
+                                                            start_x_m: start_x_m + min(self.width - start_x, self.team1[i].sight_range * 2 + 1 - start_x_m)]
+                # print(mm)
+                mask[start_y: end_y , start_x: end_x] *= mm
+
+            mask = (mask - 1) * -1
+            map_env[:, :, 2] *= mask
+
+            return map_env
+
         else:
-            return self.map_env[:, :, [0, 2, 1, 3]]  # 1- friendly team, 2 - enemy`s team
+            map_env = copy(self.map_env[:, :, [0, 2, 1, 3]])   # 1- friendly team, 2 - enemy`s team
+            mask = np.ones(map_env.shape[:2])
+            for i in range(len(self.team2)):
+                start_x = max(self.team2[i].X - self.team2[i].sight_range, 0)
+                end_x = min(self.team2[i].X + self.team2[i].sight_range + 1, self.width)
+                start_y = max(self.team2[i].Y - self.team2[i].sight_range, 0)
+                end_y = min(self.team2[i].Y + self.team2[i].sight_range + 1, self.height)
+                start_y_m = max(self.team2[i].sight_range - self.team2[i].Y, 0)
+                start_x_m = max(self.team2[i].sight_range - self.team2[i].X, 0)
+                mm = self.team2[i].sight_mask[
+                     start_y_m: start_y_m + min(self.height - start_y, self.team2[i].sight_range * 2 + 1 - start_y_m),
+                     start_x_m: start_x_m + min(self.width - start_x, self.team2[i].sight_range * 2 + 1 - start_x_m)]
+                mask[start_y: end_y, start_x: end_x] *= mm
+
+            mask = (mask - 1) * -1
+            map_env[:, :, 2] *= mask
+
+            return map_env
+
 
 
     def build_collision_map(self):
@@ -133,6 +169,8 @@ class TankGame():
             self.map[0:M, tank_place * M:(tank_place + 1) * M, 1] = self.tank_type_d[self.team1[i].type]
             self.map_env[0, tank_place, 1] = self.tank_type_d[self.team1[i].type]
             self.map_coll[0:M, tank_place * M:(tank_place + 1) * M, 1] = self.team1[i].id_game
+            self.team1[i].Y = 0
+            self.team1[i].X = tank_place
             team_free_cells[0].remove(tank_place)
         #  team 2 to map, layer 2
         y_pos = self.height-1
@@ -141,6 +179,8 @@ class TankGame():
             self.map[y_pos*M:(y_pos+1)*M, tank_place * M:(tank_place + 1) * M, 2] = self.tank_type_d[self.team2[i].type]
             self.map_env[y_pos, tank_place, 2] = self.tank_type_d[self.team2[i].type]
             self.map_coll[y_pos*M:(y_pos+1)*M, tank_place * M:(tank_place + 1) * M, 1] = self.team2[i].id_game
+            self.team2[i].Y = y_pos
+            self.team2[i].X = tank_place
             team_free_cells[1].remove(tank_place)
 
         del(team_free_cells)

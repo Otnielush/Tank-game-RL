@@ -2,8 +2,8 @@ import numpy as np
 from video.graphics import FRAME_RATE, MOVES_PER_FRAME
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
-tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition']
-t_simple        = [100,   20,       2,              5,             1,          20,          30,         'normal',       10,             7,          2,              50]
+tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
+t_simple        = [100,   20,       2,              5,             1,          20,          30,         'normal',       10,             7,          2,              50,                6]
 
 
 class Tank():
@@ -29,6 +29,8 @@ class Tank():
 
         for (key, value) in zip(tank_features, t_simple):
             self.__dict__[key] = value
+
+        self.sight_mask = np.array([[1 if np.sqrt(x**2 + y**2) > self.sight_range else 0 for x in np.arange(-self.sight_range, self.sight_range+1, 1)] for y in np.arange(-self.sight_range, self.sight_range+1, 1)])
 
     def __str__(self):
         atts = self.__dict__
