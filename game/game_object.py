@@ -43,7 +43,7 @@ class TankGame():
         self.ID_START = 101
         self.id_tanks = self.ID_START
         self.bullets = []
-        self.id_b = 200   # id bullets
+        self.id_bul = 200   # id bullets
         num_players = len(team1_payers) + len(team2_payers)
         self.connection = net_connection(num_players, False, (height, width, 4), 9, (5,))
 
@@ -61,8 +61,12 @@ class TankGame():
 
 
         self.map_generate()
-
         # sending ENV to network connection
+        self.send_data_to_players()
+
+
+
+    def send_data_to_players(self):
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
             self.connection.send_env_to_players(self.team1[i].id_game - self.ID_START, env_team1,
@@ -77,36 +81,37 @@ class TankGame():
 
     # Making input for players
     def build_env_map_team(self, team_num):
+        # TODO change algorithm of sight
         if team_num == 1:
             map_env = copy(self.map_env[:, :, :4])
             mask = np.ones(map_env.shape[:2])
             for i in range(len(self.team1)):
-                start_x = max(self.team1[i].X - self.team1[i].sight_range, 0)
-                end_x = min(self.team1[i].X + self.team1[i].sight_range +1, self.width)
-                start_y = max(self.team1[i].Y - self.team1[i].sight_range, 0)
-                end_y = min(self.team1[i].Y + self.team1[i].sight_range +1, self.height)
-                start_y_m = max(self.team1[i].sight_range - self.team1[i].Y, 0)
-                start_x_m = max(self.team1[i].sight_range - self.team1[i].X, 0)
-                mm = self.team1[i].sight_mask[start_y_m: start_y_m + min(self.height - start_y, self.team1[i].sight_range * 2 + 1 - start_y_m),
-                                                            start_x_m: start_x_m + min(self.width - start_x, self.team1[i].sight_range * 2 + 1 - start_x_m)]
+                start_x = max(round(self.team1[i].X - self.team1[i].sight_range), 0)
+                end_x = min(round(self.team1[i].X + self.team1[i].sight_range +1), self.width)
+                start_y = max(round(self.team1[i].Y - self.team1[i].sight_range), 0)
+                end_y = min(round(self.team1[i].Y + self.team1[i].sight_range +1), self.height)
+                start_y_m = max(round(self.team1[i].sight_range - self.team1[i].Y), 0)
+                start_x_m = max(round(self.team1[i].sight_range - self.team1[i].X), 0)
+                mm = self.team1[i].sight_mask[
+                     start_y_m: start_y_m + min(self.height - start_y, self.team1[i].sight_range * 2 + 1 - start_y_m),
+                     start_x_m: start_x_m + min(self.width - start_x, self.team1[i].sight_range * 2 + 1 - start_x_m)]
                 # print(mm)
                 mask[start_y: end_y , start_x: end_x] *= mm
 
             mask = (mask - 1) * -1
             map_env[:, :, 2] *= mask
-
             return map_env
 
         else:
             map_env = copy(self.map_env[:, :, [0, 2, 1, 3]])   # 1- friendly team, 2 - enemy`s team
             mask = np.ones(map_env.shape[:2])
             for i in range(len(self.team2)):
-                start_x = max(self.team2[i].X - self.team2[i].sight_range, 0)
-                end_x = min(self.team2[i].X + self.team2[i].sight_range + 1, self.width)
-                start_y = max(self.team2[i].Y - self.team2[i].sight_range, 0)
-                end_y = min(self.team2[i].Y + self.team2[i].sight_range + 1, self.height)
-                start_y_m = max(self.team2[i].sight_range - self.team2[i].Y, 0)
-                start_x_m = max(self.team2[i].sight_range - self.team2[i].X, 0)
+                start_x = max(round(self.team2[i].X - self.team2[i].sight_range), 0)
+                end_x = min(round(self.team2[i].X + self.team2[i].sight_range + 1), self.width)
+                start_y = max(round(self.team2[i].Y - self.team2[i].sight_range), 0)
+                end_y = min(round(self.team2[i].Y + self.team2[i].sight_range + 1), self.height)
+                start_y_m = max(round(self.team2[i].sight_range - self.team2[i].Y), 0)
+                start_x_m = max(round(self.team2[i].sight_range - self.team2[i].X), 0)
                 mm = self.team2[i].sight_mask[
                      start_y_m: start_y_m + min(self.height - start_y, self.team2[i].sight_range * 2 + 1 - start_y_m),
                      start_x_m: start_x_m + min(self.width - start_x, self.team2[i].sight_range * 2 + 1 - start_x_m)]
@@ -121,8 +126,11 @@ class TankGame():
 
     def build_collision_map(self):
         self.map_coll[:,:,0] = np.rint(self.map[:,:,0] - 0.35)  # 1 - Wall, 1 - Rock, all other - 0
-        self.map_coll[0:self.PIX_CELL, :, 0] = self.map[0:self.PIX_CELL, :, 1]  # base team 1
-        self.map_coll[(self.height-1)*self.PIX_CELL:, :, 0] = self.map[(self.height - 1) * self.PIX_CELL:, :, 2]  # base team 2
+        self.map_coll[self.PIX_CELL:self.PIX_CELL*2, self.PIX_CELL:self.PIX_CELL*(self.width-2), 0] = \
+            self.map[self.PIX_CELL:self.PIX_CELL*2, self.PIX_CELL:self.PIX_CELL*(self.width-2), 1]  # base team 1
+        self.map_coll[self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), self.PIX_CELL:self.PIX_CELL * (self.width - 2), 0] = \
+            self.map[self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), self.PIX_CELL:self.PIX_CELL * (self.width - 2), 2]  # base team 2
+
 
     def map_generate(self):
         # each layer of map mean:
@@ -154,7 +162,7 @@ class TankGame():
         # base for team (occupy for win) 2 cells
         base_place = int((self.width-1) / 2)
         self.map[1*M: 2*M, base_place*M:(base_place+2)*M, 1] = 1
-        self.map[(self.height-2)*M:, base_place*M:(base_place+2)*M, 2] = 1
+        self.map[(self.height-2)*M:(self.height-1)*M, base_place*M:(base_place+2)*M, 2] = 1
         self.map_env[1, base_place:(base_place+2), 1] = 1
         self.map_env[(self.height-2), base_place:(base_place+2), 2] = 1
 
@@ -174,7 +182,7 @@ class TankGame():
         y_pos = 1
         for i in range(len(self.team1)):
             tank_place = random.choice(list(team_free_cells[0]))
-            tank_place = 10 # !!!!! TEST
+            tank_place = 10  # !!!!! TODO TEST
             self.team1[i].Y = y_pos
             self.team1[i].X = tank_place
             self.team1[i].calc_tank_coordinates(y_pos*M, tank_place*M)

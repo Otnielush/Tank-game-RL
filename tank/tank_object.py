@@ -12,9 +12,10 @@ class Tank():
         # map placement
         self.X = x
         self.Y = y
-        # TODO move this to tank features
+        # TODO move this 2 to tank features
         self.width = 0.6
         self.height = 1
+
         self.crop_y = 0  # for coordinate placement on map -  0 + crop : X - crop
         self.crop_x = 0
         self.tank_coor_yx = []  # coordinates of tank for map placement and rotating
@@ -38,6 +39,12 @@ class Tank():
         for (key, value) in zip(tank_features, t_simple):
             self.__dict__[key] = value
 
+        self.max_speed /= FRAME_RATE
+        self.speed_turn /= FRAME_RATE
+        self.speed_tower /= FRAME_RATE
+        self.reload_ammo *= FRAME_RATE
+        self.reload_skill *= FRAME_RATE
+
         self.sight_mask = np.array([[1 if np.sqrt(x**2 + y**2) > self.sight_range else 0 for x in np.arange(-self.sight_range, self.sight_range+1, 1)] for y in np.arange(-self.sight_range, self.sight_range+1, 1)])
         self.crop_y = (Pix_Cell - self.height * Pix_Cell) / 2
         self.crop_x = (Pix_Cell - self.width * Pix_Cell) / 2
@@ -57,8 +64,9 @@ class Tank():
 
     # return coordinates of rotated tank on map from 0
     def calc_tank_coordinates(self, y_pos=0, x_pos=0):
-        yy = -self.tank_coor_yx[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.cos(np.pi * 2 * self.direction_tank)
+        yy = self.tank_coor_yx[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * -np.cos(np.pi * 2 * self.direction_tank)
         xx = self.tank_coor_yx[1] * np.cos(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.sin(np.pi * 2 * self.direction_tank)
+
         yy = yy + (self.crop_y + y_pos) - yy.min()
         xx = xx + (self.crop_x + x_pos - round(xx.min()/2))
         self.coords_yx = [np.rint(yy).astype(int), np.rint(xx).astype(int)]
@@ -79,7 +87,7 @@ class Tank():
 
     # collision map layer, [accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)]
     # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
-    # ! Return id, [old YX],old_coords[y[],x[]], shot, skill
+    # ! Return [old YX],old_coords[y[],x[]], shot, skill
     def move(self, coll_map, actions):
         # remove old coords from collision map
         coll_map[self.coords_yx[0], self.coords_yx[1], 1] = 0
@@ -96,7 +104,7 @@ class Tank():
 
         self.calc_speed_yx()
         self.Y += self.speed_y
-        self.X = self.X + self.speed_x
+        self.X += self.speed_x
 
         self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
 
@@ -107,10 +115,6 @@ class Tank():
 
         check = 1
         while coll_map[self.coords_yx[0], self.coords_yx[1], :].sum() > 0:
-            print('coll', coll_map[self.coords_yx[0], self.coords_yx[1], 0])
-            print('coll2', coll_map[self.coords_yx[0], self.coords_yx[1], 1])
-            print('collision', self.id_game, self.Y, self.X, self.speed_y, self.speed_x)
-
             self.direction_tank -= (diff_direction / 4)
             self.Y -= diff_y / 4
             self.X -= diff_x / 4
@@ -120,7 +124,7 @@ class Tank():
             else: break
 
         # Calculation for each move
-        tick = (1/(FRAME_RATE*MOVES_PER_FRAME))
+        tick = 1
         if self.reloading_ammo > 0: self.reloading_ammo -= tick
         else: self.reloading_ammo = 0.0
         if self.reloading_skill > 0: self.reloading_skill -= tick
@@ -128,10 +132,15 @@ class Tank():
 
         if actions[3] and self.reloading_ammo < 0.001:
             self.shot()
+        else:
+            actions[3] = False
         if actions[4] and self.reloading_skill < 0.001:
             self.use_skill()
+        else:
+            actions[4] = False
 
-        return self.id_game, old_yx, old_coords, actions[3], actions[4]
+
+        return old_yx, old_coords, actions[3], actions[4]
 
 
     def shot(self):
@@ -145,7 +154,6 @@ class Tank():
 
 # TODO: 1. Now creating only simple type of tank. Need to add more types.
 #  2. Add flame tank
-#  3. Finish move method
 
 
 

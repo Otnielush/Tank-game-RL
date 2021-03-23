@@ -21,3 +21,4 @@
 
 # TODO: 1. Make visiulization for game by pygame
 # TODO: 2. game engine (doing now)
+# TODO: add aim for rocket by AI
