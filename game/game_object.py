@@ -8,8 +8,8 @@ from net.broadcasting import net_connection
 # Steps: create, new_game
 class TankGame():
 
-    def __init__(self):
-        self.PIX_CELL = 5
+    def __init__(self, pixels=5):
+        self.PIX_CELL = pixels
         self.team_size = 0
         self.width = 0
         self.height = 0
@@ -19,6 +19,7 @@ class TankGame():
         self.team1 = [] # [Tank]
         self.team2 = []
         self.connection = 0
+
 
 
 
@@ -50,12 +51,12 @@ class TankGame():
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_payers)):
-            self.team1.append(Tank(self.id_tanks, team1_payers[i], 0, 0))
+            self.team1.append(Tank(self.id_tanks, team1_payers[i], 0, 0, self.PIX_CELL))
             team1_payers[i].change_id(id_game=self.id_tanks)
             self.team1[i].player.connected_new_game(self.connection)
             self.id_tanks += 1
         for i in range(len(team2_payers)):
-            self.team2.append(Tank(self.id_tanks, team2_payers[i], 0, 0))
+            self.team2.append(Tank(self.id_tanks, team2_payers[i], 0, 0, self.PIX_CELL))
             team2_payers[i].change_id(id_game=self.id_tanks)
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks += 1
@@ -167,21 +168,29 @@ class TankGame():
         #  putting tanks from team 1 to map, layer 1
         for i in range(len(self.team1)):
             tank_place = random.choice(list(team_free_cells[0]))
-            self.map[0:M, tank_place * M:(tank_place + 1) * M, 1] = self.tank_type_d[self.team1[i].type]
-            self.map_env[0, tank_place, 1] = self.tank_type_d[self.team1[i].type]
-            self.map_coll[0:M, tank_place * M:(tank_place + 1) * M, 1] = self.team1[i].id_game
             self.team1[i].Y = 0
             self.team1[i].X = tank_place
+            coords_yx = self.team1[i].calc_tank_coordinates(0, tank_place*M)
+
+            self.map[coords_yx[0], coords_yx[1], 1] = self.tank_type_d[self.team1[i].type]
+            self.map_env[0:round(self.team1[i].height),
+                        tank_place: tank_place+max(round(self.team1[i].width), 1), 1] = self.tank_type_d[self.team1[i].type]
+            self.map_coll[coords_yx[0], coords_yx[1], 1] = self.team1[i].id_game
             team_free_cells[0].remove(tank_place)
+
         #  team 2 to map, layer 2
         y_pos = self.height-1
         for i in range(len(self.team2)):
             tank_place = random.choice(list(team_free_cells[1]))
-            self.map[y_pos*M:(y_pos+1)*M, tank_place * M:(tank_place + 1) * M, 2] = self.tank_type_d[self.team2[i].type]
-            self.map_env[y_pos, tank_place, 2] = self.tank_type_d[self.team2[i].type]
-            self.map_coll[y_pos*M:(y_pos+1)*M, tank_place * M:(tank_place + 1) * M, 1] = self.team2[i].id_game
+            self.team2[i].direction_tank = 0.5
             self.team2[i].Y = y_pos
             self.team2[i].X = tank_place
+            coords_yx = self.team2[i].calc_tank_coordinates(y_pos*M, tank_place * M)
+
+            self.map[coords_yx[0], coords_yx[1], 2] = self.tank_type_d[self.team2[i].type]
+            self.map_env[y_pos:y_pos+ max(1, round(self.team2[i].height)),
+                        tank_place: tank_place+max(round(self.team2[i].width), 1), 2] = self.tank_type_d[self.team2[i].type]
+            self.map_coll[coords_yx[0], coords_yx[1], 1] = self.team2[i].id_game
             team_free_cells[1].remove(tank_place)
 
         del(team_free_cells)
