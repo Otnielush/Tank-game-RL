@@ -16,11 +16,9 @@ class TankGame():
         self.map_obs = ['land', 'bush', 'desert', 'forest', 'water', 'swamp', 'wall', 'rock']
         self.map_obs_d = {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}  # Dictionary for obstacles
         self.tank_type_d = {t[0]:t[1] for t in zip(tank_type, np.linspace(0, 1, len(tank_type)))}
-        self.team1 = [] # [Tank]
+        self.team1 = []  # [Tank]
         self.team2 = []
         self.connection = 0
-
-
 
 
         # SCORES
@@ -40,7 +38,7 @@ class TankGame():
         self.width = width
         self.height = height
 
-        self.team1 = [] # [Tank]
+        self.team1 = []  # [Tank]
         self.team2 = []
         self.ID_START = 101
         self.id_tanks = self.ID_START
@@ -122,7 +120,7 @@ class TankGame():
 
 
     def build_collision_map(self):
-        self.map_coll[:,:,0] = np.rint(self.map[:,:,0] * 4 - 2.35)  #  1 - Wall, 2 - Rock, all other - 0
+        self.map_coll[:,:,0] = np.rint(self.map[:,:,0] - 0.35)  # 1 - Wall, 1 - Rock, all other - 0
         self.map_coll[0:self.PIX_CELL, :, 0] = self.map[0:self.PIX_CELL, :, 1]  # base team 1
         self.map_coll[(self.height-1)*self.PIX_CELL:, :, 0] = self.map[(self.height - 1) * self.PIX_CELL:, :, 2]  # base team 2
 
@@ -140,25 +138,32 @@ class TankGame():
 
 
         # Adding obstacles randomly on map. 2 lines from team sides is free (land)
-        for y in np.arange(2, self.height - 2, 1):
-            for x in range(self.width):
+        for y in np.arange(3, self.height - 3, 1):
+            for x in np.arange(1, self.width-1, 1):
                 obstacle = self.map_obs_d[random.choice(self.map_obs)]
                 self.map[y*M:(y+1)*M, x*M:(x+1)*M, 0] = obstacle
                 self.map_env[y, x, 0] = obstacle
+        # Border of map
+        self.map[0:M, :, 0] = 1
+        self.map[(self.height-1) * M:(self.height)* M, :, 0] = 1
+        self.map[:, 0:M, 0] = 1
+        self.map[:, (self.width-1)*M:self.width*M, 0] = 1
+        self.map_env[[0, -1], :, 0] = 1
+        self.map_env[:, [0, -1], 0] = 1
 
         # base for team (occupy for win) 2 cells
         base_place = int((self.width-1) / 2)
-        self.map[0:M, base_place*M:(base_place+2)*M, 1] = 1
-        self.map[(self.height-1)*M:, base_place*M:(base_place+2)*M, 2] = 1
-        self.map_env[0, base_place:(base_place+2), 1] = 1
-        self.map_env[(self.height-1):, base_place:(base_place+2), 2] = 1
+        self.map[1*M: 2*M, base_place*M:(base_place+2)*M, 1] = 1
+        self.map[(self.height-2)*M:, base_place*M:(base_place+2)*M, 2] = 1
+        self.map_env[1, base_place:(base_place+2), 1] = 1
+        self.map_env[(self.height-2), base_place:(base_place+2), 2] = 1
 
         self.build_collision_map()
 
         # Adding tanks
         # TODO Now only simple tank types. Change to different.
         #  Need to Change it with creation of tank objects
-        free_cells = set(np.arange(self.width))
+        free_cells = set(np.arange(1, self.width-1))
         free_cells.remove(base_place)
         free_cells.remove(base_place+1)
         team_free_cells = [copy(free_cells), copy(free_cells)]
@@ -166,31 +171,33 @@ class TankGame():
 
 
         #  putting tanks from team 1 to map, layer 1
+        y_pos = 1
         for i in range(len(self.team1)):
             tank_place = random.choice(list(team_free_cells[0]))
-            self.team1[i].Y = 0
+            tank_place = 10 # !!!!! TEST
+            self.team1[i].Y = y_pos
             self.team1[i].X = tank_place
-            coords_yx = self.team1[i].calc_tank_coordinates(0, tank_place*M)
+            self.team1[i].calc_tank_coordinates(y_pos*M, tank_place*M)
 
-            self.map[coords_yx[0], coords_yx[1], 1] = self.tank_type_d[self.team1[i].type]
-            self.map_env[0:round(self.team1[i].height),
+            self.map[self.team1[i].coords_yx[0], self.team1[i].coords_yx[1], 1] = self.tank_type_d[self.team1[i].type]
+            self.map_env[y_pos:y_pos+ max(1, round(self.team2[i].height)),
                         tank_place: tank_place+max(round(self.team1[i].width), 1), 1] = self.tank_type_d[self.team1[i].type]
-            self.map_coll[coords_yx[0], coords_yx[1], 1] = self.team1[i].id_game
+            self.map_coll[self.team1[i].coords_yx[0], self.team1[i].coords_yx[1], 1] = self.team1[i].id_game
             team_free_cells[0].remove(tank_place)
 
         #  team 2 to map, layer 2
-        y_pos = self.height-1
+        y_pos = self.height-2
         for i in range(len(self.team2)):
             tank_place = random.choice(list(team_free_cells[1]))
             self.team2[i].direction_tank = 0.5
             self.team2[i].Y = y_pos
             self.team2[i].X = tank_place
-            coords_yx = self.team2[i].calc_tank_coordinates(y_pos*M, tank_place * M)
+            self.team2[i].calc_tank_coordinates(y_pos*M, tank_place * M)
 
-            self.map[coords_yx[0], coords_yx[1], 2] = self.tank_type_d[self.team2[i].type]
+            self.map[self.team2[i].coords_yx[0], self.team2[i].coords_yx[1], 2] = self.tank_type_d[self.team2[i].type]
             self.map_env[y_pos:y_pos+ max(1, round(self.team2[i].height)),
                         tank_place: tank_place+max(round(self.team2[i].width), 1), 2] = self.tank_type_d[self.team2[i].type]
-            self.map_coll[coords_yx[0], coords_yx[1], 1] = self.team2[i].id_game
+            self.map_coll[self.team2[i].coords_yx[0], self.team2[i].coords_yx[1], 1] = self.team2[i].id_game
             team_free_cells[1].remove(tank_place)
 
         del(team_free_cells)

@@ -62,7 +62,7 @@ class Tank():
         yy = yy + (self.crop_y + y_pos) - yy.min()
         xx = xx + (self.crop_x + x_pos - round(xx.min()/2))
         self.coords_yx = [np.rint(yy).astype(int), np.rint(xx).astype(int)]
-        return self.coords_yx
+
 
     def calc_directions(self, turn_body, turn_tower):
         if turn_body > 1 or turn_body < -1:  # 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
@@ -73,36 +73,51 @@ class Tank():
         self.direction_tower += (turn_tower * self.speed_tower)
 
     def calc_speed_yx(self):
-        self.speed_y = np.cos(self.direction_tank*np.pi*2) * self.speed
-        self.speed_x = np.sin(self.direction_tank*np.pi*2) * self.speed
+        self.speed_y = np.cos(-self.direction_tank*np.pi*2) * self.speed
+        self.speed_x = np.sin(-self.direction_tank*np.pi*2) * self.speed
 
 
     # collision map layer, [accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)]
     # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
     # ! Return id, [old YX],old_coords[y[],x[]], shot, skill
     def move(self, coll_map, actions):
+        # remove old coords from collision map
+        coll_map[self.coords_yx[0], self.coords_yx[1], 1] = 0
+        old_dir_tank = copy(self.direction_tank)
+        old_yx = [copy(self.Y), copy(self.X)]
+        old_coords = copy(self.coords_yx)
+
         self.calc_directions(actions[1], actions[2])
         self.speed += (self.max_speed * actions[0] * 0.2)  # 0.2 acceleration / brakes
         if self.speed > self.max_speed and self.speed > 0:
             self.speed = self.max_speed
-        if self.speed < self.max_speed*0.8 and self.speed < 0:
+        if self.speed < self.max_speed * 0.8 and self.speed < 0:
             self.speed = self.max_speed * -0.8
 
         self.calc_speed_yx()
+        self.Y += self.speed_y
+        self.X = self.X + self.speed_x
 
-        old_yx = [self.Y, self.X]
-        old_coords = copy(self.coords_yx)
-        new_y = self.Y + self.speed_y
-        new_x = self.X + self.speed_x
-        self.coords_yx = self.calc_tank_coordinates(new_y * self.PIX_CELL, new_x * self.PIX_CELL)
+        self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
 
-        if coll_map[self.coords_yx[0], self.coords_yx[1], :].sum() > 0:
-            new_y = self.Y + (new_y - self.Y) / 2
-            new_x = self.X + (new_x - self.X) / 2
-            self.coords_yx = self.calc_tank_coordinates(new_y * self.PIX_CELL, new_x * self.PIX_CELL)
-        else:
-            self.Y = new_y
-            self.X = new_x
+        # differences of moving
+        diff_direction = old_dir_tank - self.direction_tank
+        diff_y = self.Y - old_yx[0]
+        diff_x = self.X - old_yx[1]
+
+        check = 1
+        while coll_map[self.coords_yx[0], self.coords_yx[1], :].sum() > 0:
+            print('coll', coll_map[self.coords_yx[0], self.coords_yx[1], 0])
+            print('coll2', coll_map[self.coords_yx[0], self.coords_yx[1], 1])
+            print('collision', self.id_game, self.Y, self.X, self.speed_y, self.speed_x)
+
+            self.direction_tank -= (diff_direction / 4)
+            self.Y -= diff_y / 4
+            self.X -= diff_x / 4
+            self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
+            if check <= 4:
+                check += 1
+            else: break
 
         # Calculation for each move
         tick = (1/(FRAME_RATE*MOVES_PER_FRAME))
