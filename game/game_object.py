@@ -19,6 +19,7 @@ class TankGame():
         self.team1 = []  # [Tank]
         self.team2 = []
         self.connection = 0
+        self.rewards = []  # id[reward]  for 1 step
 
 
         # SCORES
@@ -32,9 +33,13 @@ class TankGame():
         self.friendly_fire      = -1
 
 
+        self.data = 0
+        self.frame_step = 0
+
+
     # start new round with array of connected players [player, ...]
     # id starts from 101
-    def new_game(self, height, width, team1_payers, team2_payers):
+    def new_game(self, width, height, team1_payers, team2_payers):
         self.width = width
         self.height = height
 
@@ -43,9 +48,10 @@ class TankGame():
         self.ID_START = 101
         self.id_tanks = self.ID_START
         self.bullets = []
+        self.bullets_in_act = ()
         self.id_bul = 200   # id bullets
         num_players = len(team1_payers) + len(team2_payers)
-        self.connection = net_connection(num_players, False, (height, width, 4), 9, (5,))
+        self.connection = net_connection(num_players, False, (width, height, 4), 10, (5,))
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_payers)):
@@ -59,6 +65,8 @@ class TankGame():
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks += 1
 
+        self.rewards = np.zeros((num_players))
+
 
         self.map_generate()
         # sending ENV to network connection
@@ -69,13 +77,15 @@ class TankGame():
     def send_data_to_players(self):
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
-            self.connection.send_env_to_players(self.team1[i].id_game - self.ID_START, env_team1,
-                    [self.team1[i].Y, self.team1[i].X, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
+            idd = self.team1[i].id_game - self.ID_START
+            self.connection.send_env_to_players(idd, env_team1,
+                    [self.rewards[idd], self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
                      self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
-            self.connection.send_env_to_players(self.team2[i].id_game - self.ID_START, env_team2,
-                    [self.team2[i].Y, self.team2[i].X, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
+            idd = self.team2[i].id_game - self.ID_START
+            self.connection.send_env_to_players(idd, env_team2,
+                    [self.rewards[idd], self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
                      self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition])
 
 
@@ -182,7 +192,6 @@ class TankGame():
         y_pos = 1
         for i in range(len(self.team1)):
             tank_place = random.choice(list(team_free_cells[0]))
-            tank_place = 10  # !!!!! TODO TEST
             self.team1[i].Y = y_pos
             self.team1[i].X = tank_place
             self.team1[i].calc_tank_coordinates(y_pos*M, tank_place*M)

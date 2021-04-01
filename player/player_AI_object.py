@@ -36,6 +36,7 @@ class player_AI():
         self.env = self.connection.get_env_from_server(self.id)
         return self.action_function()
 
+    # TODO func for save env and rewards
 
 
 

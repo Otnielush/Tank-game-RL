@@ -1,6 +1,6 @@
 import numpy as np
 from copy import copy
-from video.graphics import FRAME_RATE
+from options.video import FRAME_RATE
 
 
 ammo_types = ['normal', 'rocket', 'bomb', 'jet', 'laser', 'electricity', 'mine', 'none']
@@ -11,10 +11,10 @@ a_normal      = [   4,          8,          True,       False,             False
 
 
 class Ammo():
-    def __init__(self, tank, id, y, x, angle, Pixels):
-        self.PIX_CELL = Pixels
+    def __init__(self, tank, id):
+        self.PIX_CELL = tank.PIX_CELL
         self.parent = tank
-        self.angle = angle
+        self.angle = tank.direction_tank+tank.direction_tower
         self.done = False
 
         for (key, value) in zip(ammo_features, a_normal):
@@ -22,12 +22,12 @@ class Ammo():
         self.speed /= FRAME_RATE
 
 
-        if angle > 1 or angle < -1:  # 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
-            angle /= 360
-        self.speed_y = np.cos(-angle*np.pi*2) * self.speed
-        self.speed_x = np.sin(-angle*np.pi*2) * self.speed
-        self.Y = y + self.speed_y * 5
-        self.X = x + self.speed_x * 5
+        if self.angle > 1 or self.angle < -1:  # 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
+            self.angle /= 360
+        self.speed_y = np.cos(-self.angle*np.pi*2) * self.speed
+        self.speed_x = np.sin(-self.angle*np.pi*2) * self.speed
+        self.Y = tank.Y + self.speed_y * 5
+        self.X = tank.X + self.speed_x * 5
         self.coords_yx = np.rint(np.array([self.Y, self.X])*self.PIX_CELL).astype(int)
 
         self.id_game = id
@@ -59,13 +59,13 @@ class Ammo():
         hit = False
 
         # hit obstacles
-        if tar_id := coll_map[self.coords_yx[0], self.coords_yx[1], 0].sum() > 0:
+        if tar_id := coll_map[self.coords_yx[0], self.coords_yx[1], 0].any() > 0:
             hit = True
             self.damaged_target_id = tar_id
             self.hit()
 
         # hit tanks
-        if tar_id := coll_map[self.coords_yx[0], self.coords_yx[1], 1].sum() > 0:
+        if tar_id := coll_map[self.coords_yx[0], self.coords_yx[1], 1].any() > 0:
             hit = True
             self.damaged_target_id = tar_id
             # TODO add tank armor calculation

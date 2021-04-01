@@ -1,5 +1,5 @@
 import numpy as np
-from video.graphics import FRAME_RATE, MOVES_PER_FRAME
+from options.video import FRAME_RATE, MOVES_PER_FRAME
 from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
@@ -64,14 +64,15 @@ class Tank():
 
     # return coordinates of rotated tank on map from 0
     def calc_tank_coordinates(self, y_pos=0, x_pos=0):
-        yy = self.tank_coor_yx[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * -np.cos(np.pi * 2 * self.direction_tank)
-        xx = self.tank_coor_yx[1] * np.cos(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.sin(np.pi * 2 * self.direction_tank)
+        yy = self.tank_coor_yx[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.cos(np.pi * 2 * -self.direction_tank)
+        xx = self.tank_coor_yx[1] * np.cos(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.sin(np.pi * 2 * -self.direction_tank)
 
         yy = yy + (self.crop_y + y_pos) - yy.min()
-        xx = xx + (self.crop_x + x_pos - round(xx.min()/2))
-        self.coords_yx = [np.rint(yy).astype(int), np.rint(xx).astype(int)]
+        xx = xx + (self.crop_x + x_pos - int(xx.min()/2))
+        self.coords_yx = [np.floor(yy).astype(int), np.floor(xx).astype(int)]
 
 
+    # turning tank body, turning tower
     def calc_directions(self, turn_body, turn_tower):
         if turn_body > 1 or turn_body < -1:  # 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
             turn_body /= 360
@@ -79,6 +80,7 @@ class Tank():
             turn_tower /= 360
         self.direction_tank += (turn_body * self.speed_turn)
         self.direction_tower += (turn_tower * self.speed_tower)
+
 
     def calc_speed_yx(self):
         self.speed_y = np.cos(-self.direction_tank*np.pi*2) * self.speed
@@ -91,37 +93,39 @@ class Tank():
     def move(self, coll_map, actions):
         # remove old coords from collision map
         coll_map[self.coords_yx[0], self.coords_yx[1], 1] = 0
-        old_dir_tank = copy(self.direction_tank)
+
         old_yx = [copy(self.Y), copy(self.X)]
         old_coords = copy(self.coords_yx)
 
-        self.calc_directions(actions[1], actions[2])
-        self.speed += (self.max_speed * actions[0] * 0.2)  # 0.2 acceleration / brakes
+        # speed
+        self.speed += (self.max_speed * actions[0] * 0.2)  # 0.2 acceleration (TODO add to features tank) / brakes
         if self.speed > self.max_speed and self.speed > 0:
-            self.speed = self.max_speed
-        if self.speed < self.max_speed * 0.8 and self.speed < 0:
+            self.speed = copy(self.max_speed)
+        if self.speed < self.max_speed * -0.8 and self.speed < 0:
             self.speed = self.max_speed * -0.8
 
         self.calc_speed_yx()
         self.Y += self.speed_y
         self.X += self.speed_x
 
+        # first check
         self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
+        if coll_map[self.coords_yx[0], self.coords_yx[1], :].any() > 0:
+            self.speed = 0
+            self.Y = old_yx[0]
+            self.X = old_yx[1]
 
-        # differences of moving
-        diff_direction = old_dir_tank - self.direction_tank
-        diff_y = self.Y - old_yx[0]
-        diff_x = self.X - old_yx[1]
+        # turn
+        old_dir_tank = copy(self.direction_tank)
+        self.calc_directions(actions[1], actions[2])
 
-        check = 1
-        while coll_map[self.coords_yx[0], self.coords_yx[1], :].sum() > 0:
-            self.direction_tank -= (diff_direction / 4)
-            self.Y -= diff_y / 4
-            self.X -= diff_x / 4
-            self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
-            if check <= 4:
-                check += 1
-            else: break
+        # second check
+        self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
+        if coll_map[self.coords_yx[0], self.coords_yx[1], :].any() > 0:
+            self.direction_tank = old_dir_tank
+
+        # smart pushing tank away from obstacles
+
 
         # Calculation for each move
         tick = 1
@@ -139,8 +143,8 @@ class Tank():
         else:
             actions[4] = False
 
-
         return old_yx, old_coords, actions[3], actions[4]
+
 
 
     def shot(self):
@@ -154,7 +158,6 @@ class Tank():
 
 # TODO: 1. Now creating only simple type of tank. Need to add more types.
 #  2. Add flame tank
-
 
 
 
