@@ -17,8 +17,8 @@ def step(self):
     for i in range(len(self.team1)):
         if self.team1[i].hp > 0:
             idd = self.team1[i].id_game
-            old_yx, old_coords, shot, skill = self.team1[i].move(self.map_coll, self.data[idd-self.ID_START])
-            self.move_obj_on_maps(self.team1[i], 1, old_yx, old_coords)  # changing maps
+            old_xy, old_coords, shot, skill = self.team1[i].move(self.map_coll, self.data[idd - self.ID_START])
+            self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
 
             if shot:
                 # tank, id
@@ -30,8 +30,8 @@ def step(self):
     for i in range(len(self.team2)):
         if self.team2[i].hp > 0:
             idd = self.team2[i].id_game
-            old_yx, old_coords, shot, skill = self.team2[i].move(self.map_coll, self.data[idd-self.ID_START])
-            self.move_obj_on_maps(self.team2[i], 2, old_yx, old_coords)  # changing maps
+            old_xy, old_coords, shot, skill = self.team2[i].move(self.map_coll, self.data[idd - self.ID_START])
+            self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps
 
             if shot:
                 self.bullets.append(Ammo(self.team2[i], self.id_bul))
@@ -41,11 +41,11 @@ def step(self):
     # Move bullets
     for i in range(len(self.bullets)):
         if not self.bullets[i].done:
-            old_yx, old_coords, hit = self.bullets[i].move(self.map_coll)
+            old_xy, old_coords, hit = self.bullets[i].move(self.map_coll)
             if hit:
                 self.rewards[self.bullets[i].damaged_target_id]
                 self.bullets[i].damaged_target_id
-            self.move_obj_on_maps(self.bullets[i], 3, old_yx, old_coords)
+            self.move_obj_on_maps(self.bullets[i], 3, old_xy, old_coords)
             # TODO ammo dmg
             if hit:
                 pass
@@ -57,13 +57,13 @@ def step(self):
 setattr(TankGame, 'step', step)
 
 
-def move_obj_on_maps(self, obj, layer, old_yx, old_coords):
-    self.map_coll[obj.coords_yx[0], obj.coords_yx[1], 1 if layer < 3 else 2] = obj.id_game
+def move_obj_on_maps(self, obj, layer, old_xy, old_coords):
+    self.map_coll[obj.coords_xy[0], obj.coords_xy[1], 1 if layer < 3 else 2] = obj.id_game
     self.map[old_coords[0], old_coords[1], layer] = 0
-    self.map[obj.coords_yx[0], obj.coords_yx[1], layer] = self.tank_type_d[obj.type] if layer < 3 else 1
-    self.map_env[round(old_yx[0]), round(old_yx[1]), layer] = 0
-    self.map_env[round(obj.Y): round(obj.Y + max(obj.height, 1)),
-                round(obj.X): round(obj.X+max(obj.width, 1)), layer] = self.tank_type_d[obj.type] if layer < 3 else 1
+    self.map[obj.coords_xy[0], obj.coords_xy[1], layer] = self.tank_type_d[obj.type] if layer < 3 else 1
+    self.map_env[int(old_xy[0]), int(old_xy[1]), layer] = 0
+    self.map_env[int(obj.X): int(obj.X+max(obj.width, 1)),
+                    int(obj.Y): int(obj.Y + max(obj.height, 1)), layer] = self.tank_type_d[obj.type] if layer < 3 else 1
 
 
 setattr(TankGame, 'move_obj_on_maps', move_obj_on_maps)

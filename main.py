@@ -2,6 +2,7 @@ import game.game as gg
 import player.player as Player
 import matplotlib.pyplot as plt
 from options.video import WIDTH, HEIGHT, MULTY_PIXEL
+import time
 
 
 
@@ -37,8 +38,12 @@ Game.connection.send_action(1, [0.1, 0.1, 0, False, False])
 Game.connection.send_action(2, [0.1, -0.1, 0, False, False])
 Game.connection.send_action(3, [0.1, 0.0, 0, False, False])
 
+time_start = time.time()
+frame = 1
 while True:
     graphics.play_video(Game)
-    print('speed:', round(Game.team1[0].speed, 3), 'direct:', round(Game.team1[0].direction_tank, 2))
+    print('speed:', round(Game.team1[0].speed, 3), 'dir:', round(Game.team1[0].direction_tank, 2), 'FPS:', round(frame/(time.time()-time_start), 1),
+          'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1))
     Game.step()
+    frame += 1
 

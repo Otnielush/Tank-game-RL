@@ -8,7 +8,7 @@ t_simple        = [100,   20,       2,              5,             1,          2
 
 
 class Tank():
-    def __init__(self, id_game, player, y, x, Pix_Cell):
+    def __init__(self, id_game, player, x, y, Pix_Cell):
         # map placement
         self.X = x
         self.Y = y
@@ -18,7 +18,7 @@ class Tank():
 
         self.crop_y = 0  # for coordinate placement on map -  0 + crop : X - crop
         self.crop_x = 0
-        self.tank_coor_yx = []  # coordinates of tank for map placement and rotating
+        self.tank_coor_xy = []  # coordinates of tank for map placement and rotating
         self.PIX_CELL = Pix_Cell
 
         self.player = player
@@ -46,13 +46,12 @@ class Tank():
         self.reload_skill *= FRAME_RATE
 
         self.sight_mask = np.array([[1 if np.sqrt(x**2 + y**2) > self.sight_range else 0 for x in np.arange(-self.sight_range, self.sight_range+1, 1)] for y in np.arange(-self.sight_range, self.sight_range+1, 1)])
-        self.crop_y = (Pix_Cell - self.height * Pix_Cell) / 2
         self.crop_x = (Pix_Cell - self.width * Pix_Cell) / 2
+        self.crop_y = (Pix_Cell - self.height * Pix_Cell) / 2
         # blue print of tank
-        st_y = round((Pix_Cell*self.height) / 2)
         st_x = round((Pix_Cell*self.width) / 2)
-        self.tank_coor_yx = np.meshgrid(np.arange(-st_y, (Pix_Cell*self.height - st_y)),
-                                        np.arange(-st_x, (Pix_Cell*self.width - st_x)))
+        st_y = round((Pix_Cell*self.height) / 2)
+        self.tank_coor_xy = np.meshgrid(np.arange(-st_x, (Pix_Cell*self.width - st_x)), np.arange(-st_y, (Pix_Cell * self.height - st_y)))
         # last placement of tank
         self.calc_tank_coordinates()
 
@@ -63,13 +62,13 @@ class Tank():
         return 'Tank\n'+'\n'.join([str(x)+': '+str(self.__dict__[x]) for x in atts])
 
     # return coordinates of rotated tank on map from 0
-    def calc_tank_coordinates(self, y_pos=0, x_pos=0):
-        yy = self.tank_coor_yx[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.cos(np.pi * 2 * -self.direction_tank)
-        xx = self.tank_coor_yx[1] * np.cos(np.pi * 2 * self.direction_tank) + self.tank_coor_yx[0] * np.sin(np.pi * 2 * -self.direction_tank)
+    def calc_tank_coordinates(self,  x_pos=0, y_pos=0):
+        yy = self.tank_coor_xy[1] * np.cos(np.pi * 2 * self.direction_tank) + self.tank_coor_xy[0] * np.sin(np.pi * 2 * -self.direction_tank)
+        xx = self.tank_coor_xy[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_xy[0] * np.cos(np.pi * 2 * -self.direction_tank)
 
-        yy = yy + (self.crop_y + y_pos) - yy.min()
         xx = xx + (self.crop_x + x_pos - int(xx.min()/2))
-        self.coords_yx = [np.floor(yy).astype(int), np.floor(xx).astype(int)]
+        yy = yy + (self.crop_y + y_pos) - yy.min()
+        self.coords_xy = [np.rint(xx).astype(int), np.rint(yy).astype(int)]
 
 
     # turning tank body, turning tower
@@ -82,47 +81,63 @@ class Tank():
         self.direction_tower += (turn_tower * self.speed_tower)
 
 
-    def calc_speed_yx(self):
-        self.speed_y = np.cos(-self.direction_tank*np.pi*2) * self.speed
-        self.speed_x = np.sin(-self.direction_tank*np.pi*2) * self.speed
-
-
-    # collision map layer, [accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)]
-    # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
-    # ! Return [old YX],old_coords[y[],x[]], shot, skill
-    def move(self, coll_map, actions):
-        # remove old coords from collision map
-        coll_map[self.coords_yx[0], self.coords_yx[1], 1] = 0
-
-        old_yx = [copy(self.Y), copy(self.X)]
-        old_coords = copy(self.coords_yx)
-
-        # speed
-        self.speed += (self.max_speed * actions[0] * 0.2)  # 0.2 acceleration (TODO add to features tank) / brakes
+    def calc_speed_XY(self, accelerate):
+        self.speed += (self.max_speed * accelerate * 0.2)  # 0.2 acceleration (TODO add to features tank) / brakes
         if self.speed > self.max_speed and self.speed > 0:
             self.speed = copy(self.max_speed)
         if self.speed < self.max_speed * -0.8 and self.speed < 0:
             self.speed = self.max_speed * -0.8
 
-        self.calc_speed_yx()
-        self.Y += self.speed_y
-        self.X += self.speed_x
+        self.speed_x = np.sin(self.direction_tank*np.pi*2) * self.speed
+        self.speed_y = np.cos(-self.direction_tank*np.pi*2) * self.speed
 
-        # first check
-        self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
-        if coll_map[self.coords_yx[0], self.coords_yx[1], :].any() > 0:
-            self.speed = 0
-            self.Y = old_yx[0]
-            self.X = old_yx[1]
+        self.X += self.speed_x
+        self.Y += self.speed_y
+
+
+    # collision map layer, [accelerate {-1:1}, turn_body {-1:1}, turn_tower{-1:1}, shot (Boolean), skill (use, Boolean)]
+    # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
+    # ! Return [old XY],old_coords[x[],y[]], shot, skill
+    def move(self, coll_map, actions):
+        # remove old coords from collision map
+        coll_map[self.coords_xy[0], self.coords_xy[1], 1] = 0
+
+        old_xy = [copy(self.X), copy(self.Y)]
+        old_coords = copy(self.coords_xy)
+        old_speed = copy(self.speed)
 
         # turn
         old_dir_tank = copy(self.direction_tank)
         self.calc_directions(actions[1], actions[2])
 
-        # second check
-        self.calc_tank_coordinates(self.Y * self.PIX_CELL, self.X * self.PIX_CELL)
-        if coll_map[self.coords_yx[0], self.coords_yx[1], :].any() > 0:
+        # speed
+        self.calc_speed_XY(actions[0])
+        speed_delta = self.speed - old_speed
+
+        # coordinates
+        self.calc_tank_coordinates(self.X * self.PIX_CELL, self.Y * self.PIX_CELL)
+
+        # first check
+        if coll_map[self.coords_xy[0], self.coords_xy[1], :].any() > 0:
             self.direction_tank = old_dir_tank
+            self.speed -= speed_delta
+            self.X = copy(old_xy[0])
+            self.Y = copy(old_xy[1])
+            self.coords_xy = copy(old_coords)
+
+            # speed
+            self.calc_speed_XY(actions[0])
+
+            # coordinates
+            self.calc_tank_coordinates(self.X * self.PIX_CELL, self.Y * self.PIX_CELL)
+
+            # second check
+            if coll_map[self.coords_xy[0], self.coords_xy[1], :].any() > 0:
+                self.speed = 0
+                self.X = copy(old_xy[0])
+                self.Y = copy(old_xy[1])
+                self.coords_xy = copy(old_coords)
+
 
         # smart pushing tank away from obstacles
 
@@ -143,7 +158,7 @@ class Tank():
         else:
             actions[4] = False
 
-        return old_yx, old_coords, actions[3], actions[4]
+        return old_xy, old_coords, actions[3], actions[4]
 
 
 
