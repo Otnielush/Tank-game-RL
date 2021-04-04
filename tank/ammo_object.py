@@ -24,11 +24,11 @@ class Ammo():
 
         if self.angle > 1 or self.angle < -1:  # 0 - down, 90 - left, 180 - up, 270 - right. Or with minus
             self.angle /= 360
+        self.speed_x = np.sin(self.angle*np.pi*2) * self.speed
         self.speed_y = np.cos(-self.angle*np.pi*2) * self.speed
-        self.speed_x = np.sin(-self.angle*np.pi*2) * self.speed
-        self.Y = tank.Y + self.speed_y * 5
-        self.X = tank.X + self.speed_x * 5
-        self.coords_yx = np.rint(np.array([self.Y, self.X])*self.PIX_CELL).astype(int)
+        self.X = tank.X + tank.width/2 + self.speed_x * 3
+        self.Y = tank.Y + tank.height/2 + self.speed_y * 3
+        self.coords_xy = np.rint(np.array([self.X, self.Y])*self.PIX_CELL).astype(int)
 
         self.id_game = id
         self.tank_id = tank.id_game
@@ -37,7 +37,7 @@ class Ammo():
         self.damaged_target_id = 0
         self.damaged_target_yx = np.array([0,0])
         self.damage_dealed = 0
-        self.target_YX = np.array([0, 0])  # for artillery_fly = True, with multy Pixels
+        self.target_XY = np.array([0, 0])  # for artillery_fly = True, with multy Pixels
 
         self.height = 0
         self.width = 0
@@ -50,22 +50,22 @@ class Ammo():
 
     def move(self, coll_map):
         # remove old coords from collision map
-        coll_map[round(self.Y*self.PIX_CELL), round(self.X*self.PIX_CELL), 2] = 0
-        old_yx = copy(self.coords_yx)
-        self.Y += self.speed_y
+        coll_map[round(self.X*self.PIX_CELL), round(self.Y*self.PIX_CELL), 2] = 0
+        old_xy = copy(self.coords_xy)
         self.X += self.speed_x
-        self.coords_yx = np.rint(np.array([self.Y, self.X])*self.PIX_CELL).astype(int)
+        self.Y += self.speed_y
+        self.coords_xy = np.rint(np.array([self.X, self.Y]) * self.PIX_CELL).astype(int)
         self.distance += self.speed
         hit = False
 
         # hit obstacles
-        if tar_id := coll_map[self.coords_yx[0], self.coords_yx[1], 0].any() > 0:
+        if tar_id := coll_map[self.coords_xy[0], self.coords_xy[1], 0].any() > 0:
             hit = True
             self.damaged_target_id = tar_id
             self.hit()
 
         # hit tanks
-        if tar_id := coll_map[self.coords_yx[0], self.coords_yx[1], 1].any() > 0:
+        if tar_id := coll_map[self.coords_xy[0], self.coords_xy[1], 1].any() > 0:
             hit = True
             self.damaged_target_id = tar_id
             # TODO add tank armor calculation
@@ -73,24 +73,24 @@ class Ammo():
 
 
         if self.artillery_fly:
-            if (self.target_YX - self.coords_yx).sum() < 1:
+            if (self.target_XY - self.coords_xy).sum() < 1:
                 hit = True
                 self.damage_dealed  = self.hit()
 
         if self.distance >= self.max_distance:
             self.done = True
-            self.speed_y = 0
             self.speed_x = 0
+            self.speed_y = 0
 
-        return np.rint(old_yx / self.PIX_CELL).astype(int), old_yx, hit
+        return np.rint(old_xy / self.PIX_CELL).astype(int), old_xy, hit
 
 
     def hit(self):
         # TODO add explosion
         self.done = True
-        self.damaged_target_yx = self.coords_yx
-        self.speed_y = 0
+        self.damaged_target_xy = self.coords_xy
         self.speed_x = 0
+        self.speed_y = 0
         return max(((self.max_distance-self.distance)/self.max_distance) * self.parent.dmg, 0)
 
 

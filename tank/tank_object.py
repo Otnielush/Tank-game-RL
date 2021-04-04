@@ -4,7 +4,7 @@ from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
-t_simple        = [100,   20,       2,              5,             1,          20/360,          30/360,     'normal',       10,             7,           2,           50,           6]
+t_simple        = [100,   20,       2,              5,             1,          20/360,          40/360,     'normal',       10,             7,           2,           50,           6]
 
 
 class Tank():
@@ -63,8 +63,8 @@ class Tank():
 
     # return coordinates of rotated tank on map from 0
     def calc_tank_coordinates(self,  x_pos=0, y_pos=0):
-        yy = self.tank_coor_xy[1] * np.cos(np.pi * 2 * self.direction_tank) + self.tank_coor_xy[0] * np.sin(np.pi * 2 * -self.direction_tank)
-        xx = self.tank_coor_xy[1] * np.sin(np.pi * 2 * self.direction_tank) + self.tank_coor_xy[0] * np.cos(np.pi * 2 * -self.direction_tank)
+        xx = self.tank_coor_xy[0] * np.cos(np.pi * 2 * -self.direction_tank) - self.tank_coor_xy[1] * np.sin(np.pi * 2 * -self.direction_tank)
+        yy = self.tank_coor_xy[0] * np.sin(np.pi * 2 * -self.direction_tank) + self.tank_coor_xy[1] * np.cos(np.pi * 2 * -self.direction_tank)
 
         xx = xx + (self.crop_x + x_pos - int(xx.min()/2))
         yy = yy + (self.crop_y + y_pos) - yy.min()
@@ -82,7 +82,7 @@ class Tank():
 
 
     def calc_speed_XY(self, accelerate):
-        self.speed += (self.max_speed * accelerate * 0.2)  # 0.2 acceleration (TODO add to features tank) / brakes
+        self.speed += (self.max_speed * accelerate * 0.1)  # 0.1 acceleration (TODO add to features tank) / brakes
         if self.speed > self.max_speed and self.speed > 0:
             self.speed = copy(self.max_speed)
         if self.speed < self.max_speed * -0.8 and self.speed < 0:
