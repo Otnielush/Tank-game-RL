@@ -59,13 +59,15 @@ class Ammo():
         hit = False
 
         # hit obstacles
-        if tar_id := coll_map[self.coords_xy[0], self.coords_xy[1], 0].any() > 0:
+        tar_id = coll_map[self.coords_xy[0], self.coords_xy[1], 0]
+        if tar_id.any() > 0:
             hit = True
             self.damaged_target_id = tar_id
             self.hit()
 
         # hit tanks
-        if tar_id := coll_map[self.coords_xy[0], self.coords_xy[1], 1].any() > 0:
+        tar_id = coll_map[self.coords_xy[0], self.coords_xy[1], 1]
+        if tar_id.any() > 0:
             hit = True
             self.damaged_target_id = tar_id
             # TODO add tank armor calculation
