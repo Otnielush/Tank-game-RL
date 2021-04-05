@@ -79,6 +79,14 @@ class Tank():
             turn_tower /= 360
         self.direction_tank += (turn_body * self.speed_turn)
         self.direction_tower += (turn_tower * self.speed_tower)
+        if self.direction_tank > 1:
+            self.direction_tank -= 1
+        elif self.direction_tank < -1:
+            self.direction_tank += 1
+        if self.direction_tower > 1:
+            self.direction_tower -= 1
+        elif self.direction_tower < -1:
+            self.direction_tower += 1
 
 
     def calc_speed_XY(self, accelerate):
@@ -117,7 +125,7 @@ class Tank():
         # coordinates
         self.calc_tank_coordinates(self.X * self.PIX_CELL, self.Y * self.PIX_CELL)
 
-        # first check
+        # first check: turn + speed
         if coll_map[self.coords_xy[0], self.coords_xy[1], :].any() > 0:
             self.direction_tank = old_dir_tank
             self.speed -= speed_delta
@@ -131,7 +139,7 @@ class Tank():
             # coordinates
             self.calc_tank_coordinates(self.X * self.PIX_CELL, self.Y * self.PIX_CELL)
 
-            # second check
+            # second check only speed
             if coll_map[self.coords_xy[0], self.coords_xy[1], :].any() > 0:
                 self.speed = 0
                 self.X = copy(old_xy[0])
@@ -160,6 +168,32 @@ class Tank():
 
         return old_xy, old_coords, actions[3], actions[4]
 
+
+    # dmg, side: 'front', 'left', 'right', 'back'
+    def damaged(self, dmg, side):
+        damage_dealed = 0
+
+        # TODO add damage to NN -> weights of some neurons = 0
+        # TODO add crit chances by damaged side
+        if side == 'front':
+            damage_dealed = dmg - self.armor_front
+        elif side == 'left':
+            damage_dealed = dmg - self.armor_side
+        elif side == 'right':
+            damage_dealed = dmg - self.armor_side
+        elif side == 'back':
+            damage_dealed = dmg - self.armor_back
+
+        damage_dealed = min(damage_dealed, self.hp)
+        self.hp -= damage_dealed
+
+        # death
+        if self.hp <= 0:
+            self.speed = 0
+            self.speed_x = 0
+            self.speed_y = 0
+        print('damaged:', side, damage_dealed)
+        return damage_dealed
 
 
     def shot(self):

@@ -7,7 +7,7 @@ ammo_types = ['normal', 'rocket', 'bomb', 'jet', 'laser', 'electricity', 'mine',
 # max_distance - deal 0 dmg, at start - 100%; destroy - can destroy obstacles; artillery_fly - fly over obstacles to target
 # explossion - makes area dmg; expl_range - explossion range
 ammo_features = ['speed', 'max_distance', 'destroy', 'artillery_fly', 'explossion', 'expl_range']  # distance - at start-max dmg, at end-0
-a_normal      = [   4,          8,          True,       False,             False,           0]
+a_normal      = [   4,          5,          True,       False,             False,           0]
 
 
 class Ammo():
@@ -15,6 +15,11 @@ class Ammo():
         self.PIX_CELL = tank.PIX_CELL
         self.parent = tank
         self.angle = tank.direction_tank+tank.direction_tower
+        if self.angle > 1:
+            self.angle -= 1
+        elif self.angle < -1:
+            self.angle += 1
+
         self.done = False
 
         for (key, value) in zip(ammo_features, a_normal):
@@ -36,7 +41,7 @@ class Ammo():
         self.distance = 0
         self.damaged_target_id = 0
         self.damaged_target_yx = np.array([0,0])
-        self.damage_dealed = 0
+        self.damage_dealed_potencial = 0
         self.target_XY = np.array([0, 0])  # for artillery_fly = True, with multy Pixels
 
         self.height = 0
@@ -62,27 +67,28 @@ class Ammo():
         tar_id = coll_map[self.coords_xy[0], self.coords_xy[1], 0]
         if tar_id.any() > 0:
             hit = True
-            self.damaged_target_id = tar_id
+            self.damaged_target_id = tar_id.max()
             self.hit()
 
         # hit tanks
         tar_id = coll_map[self.coords_xy[0], self.coords_xy[1], 1]
         if tar_id.any() > 0:
             hit = True
-            self.damaged_target_id = tar_id
-            # TODO add tank armor calculation
-            self.damage_dealed = self.hit()
+            # TODO not sure about id
+            self.damaged_target_id = tar_id.max()
+            self.hit()
 
 
         if self.artillery_fly:
             if (self.target_XY - self.coords_xy).sum() < 1:
                 hit = True
-                self.damage_dealed  = self.hit()
+                self.hit()
 
         if self.distance >= self.max_distance:
             self.done = True
             self.speed_x = 0
             self.speed_y = 0
+            self.speed = 0
 
         return np.rint(old_xy / self.PIX_CELL).astype(int), old_xy, hit
 
@@ -93,6 +99,7 @@ class Ammo():
         self.damaged_target_xy = self.coords_xy
         self.speed_x = 0
         self.speed_y = 0
-        return max(((self.max_distance-self.distance)/self.max_distance) * self.parent.dmg, 0)
+        self.speed = 0
+        self.damage_dealed_potencial = max(((self.max_distance-self.distance)/self.max_distance) * self.parent.dmg, 0)
 
 

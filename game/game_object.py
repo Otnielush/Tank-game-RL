@@ -18,19 +18,23 @@ class TankGame():
         self.tank_type_d = {t[0]:t[1] for t in zip(tank_type, np.linspace(0, 1, len(tank_type)))}
         self.team1 = []  # [Tank]
         self.team2 = []
+        self.id_tanks = {}
         self.connection = 0
-        self.rewards = []  # id[reward]  for 1 step
+        self.rewards = 0  # {id, [step, reward, comment]}  # new game generates
+        self.steps = 0
 
 
         # SCORES
-        self.score_win          = 5
-        self.score_hit          = 1
-        self.score_kill         = 2
-        self.score_dmg          = 0.01
-        self.score_death        = -2
-        self.score_kill_assist  = 1
-        self.score_exploring    = 1
-        self.friendly_fire      = -1
+        self.score_win              = 5
+        self.score_hit              = 1
+        self.score_kill             = 2
+        self.score_dmg              = 0.01
+        self.score_death            = -2
+        self.score_kill_assist      = 1
+        self.score_exploring        = 1
+        self.score_friendly_fire    = -1
+        self.score_move             = -0.01
+        self.score_shot             = -0.01
 
 
         self.data = 0
@@ -43,30 +47,35 @@ class TankGame():
         self.width = width
         self.height = height
 
+        self.steps = 0
         self.team1 = []  # [Tank]
         self.team2 = []
         self.ID_START = 101
-        self.id_tanks = self.ID_START
+        id_tank = self.ID_START
         self.bullets = []
-        self.bullets_in_act = ()
+        self.bullets_in_act = []  # ids of bullets - id_bul ( for bullets array )
         self.id_bul = 200   # id bullets
         num_players = len(team1_payers) + len(team2_payers)
         self.connection = net_connection(num_players, False, (width, height, 4), 10, (5,))
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_payers)):
-            self.team1.append(Tank(self.id_tanks, team1_payers[i], 0, 0, self.PIX_CELL))
-            team1_payers[i].change_id(id_game=self.id_tanks)
+            self.team1.append(Tank(id_tank, team1_payers[i], 0, 0, self.PIX_CELL))
+            team1_payers[i].change_id(id_game=id_tank)
             self.team1[i].player.connected_new_game(self.connection)
-            self.id_tanks += 1
+            self.id_tanks[id_tank] = self.team1[-1]
+            id_tank += 1
         for i in range(len(team2_payers)):
-            self.team2.append(Tank(self.id_tanks, team2_payers[i], 0, 0, self.PIX_CELL))
-            team2_payers[i].change_id(id_game=self.id_tanks)
+            self.team2.append(Tank(id_tank, team2_payers[i], 0, 0, self.PIX_CELL))
+            team2_payers[i].change_id(id_game=id_tank)
             self.team2[i].player.connected_new_game(self.connection)
-            self.id_tanks += 1
+            self.id_tanks[id_tank] = self.team2[-1]
+            id_tank += 1
 
-        self.rewards = np.zeros((num_players))
-
+        # (num_players, 20000, 2))  # {id, step, [reward, comment]}
+        self.rewards = [[[0, 'comment about reward']
+                         for _ in range(20000)]
+                        for _ in range(num_players)]
 
         self.map_generate()
         # sending ENV to network connection
@@ -79,13 +88,13 @@ class TankGame():
         for i in range(len(self.team1)):
             idd = self.team1[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team1,
-                    [self.rewards[idd], self.team1[i].X, self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
+                    [copy(self.rewards[idd][self.steps][0]), self.team1[i].X, self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
                      self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
             idd = self.team2[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team2,
-                    [self.rewards[idd], self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
+                    [copy(self.rewards[idd][self.steps][0]), self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
                      self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition])
 
 
@@ -240,6 +249,9 @@ class TankGame():
         del(team_free_cells)
 
 
+    def reward(self, id_tank, score, comment):
+        self.rewards[id_tank][self.steps][0] += score
+        self.rewards[id_tank][self.steps][1] += (comment + ',')
 
 
 
