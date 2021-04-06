@@ -17,7 +17,7 @@ class Ammo():
         self.angle = tank.direction_tank+tank.direction_tower
         if self.angle > 1:
             self.angle -= 1
-        elif self.angle < -1:
+        elif self.angle < 0:
             self.angle += 1
 
         self.done = False

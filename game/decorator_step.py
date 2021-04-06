@@ -67,11 +67,20 @@ def step(self):
                 # move from array to new array
                 self.bullets_in_act.remove(self.bullets[i].id_game - 200)
                 # calculate angle of hitting target, angle 0 - down; 0.5 - up
+
                 angle_diff = self.id_tanks[self.bullets[i].damaged_target_id].direction_tank - self.bullets[i].angle
                 # front hit ±30°
-                if abs(angle_diff) > 0.083:
+                # TODO very simple hit place detection
+                if abs(angle_diff) < 0.083:
                     side = 'back'
-
+                # 30° - 150°
+                elif angle_diff < -0.083 and angle_diff > -0.4167:
+                    side = 'right'
+                elif angle_diff > 0.083 and angle_diff < 0.4167:
+                    side = 'left'
+                else:
+                    side = 'front'
+                print('angle:', angle_diff,'dir:',self.id_tanks[self.bullets[i].damaged_target_id].direction_tank,'bul:', self.bullets[i].angle, end=' ')
                 dmg_dealed = self.id_tanks[self.bullets[i].damaged_target_id].damaged(self.bullets[i].damage_dealed_potencial, side)
 
                 # calc dmg and hp to damaged tank

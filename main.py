@@ -35,7 +35,7 @@ Game.new_game(WIDTH, HEIGHT, team1, team2)
 # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
 Game.connection.send_action(0, [1, 1, 0.5, True, False])
 Game.connection.send_action(1, [0.1, 0.1, 0, False, False])
-Game.connection.send_action(2, [0.1, -0.1, 0, False, False])
+Game.connection.send_action(2, [0.0, -1, 0, False, False])
 Game.connection.send_action(3, [0.1, 0.0, 0, False, False])
 
 time_start = time.time()

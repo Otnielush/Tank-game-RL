@@ -81,11 +81,11 @@ class Tank():
         self.direction_tower += (turn_tower * self.speed_tower)
         if self.direction_tank > 1:
             self.direction_tank -= 1
-        elif self.direction_tank < -1:
+        elif self.direction_tank < 0:
             self.direction_tank += 1
         if self.direction_tower > 1:
             self.direction_tower -= 1
-        elif self.direction_tower < -1:
+        elif self.direction_tower < 0:
             self.direction_tower += 1
 
 
