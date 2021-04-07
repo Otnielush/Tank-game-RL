@@ -4,13 +4,13 @@ from tank.ammo_object import Ammo
 from options.video import MOVES_PER_FRAME
 
 # calculate moves from actions
+# observation, reward, done, info = env.step(actions)  - must be like that
 def step(self):
+    info = None
+    # MOVES_PER_FRAME mechanics. second part of function is at the end of function
     if self.frame_step <= 0:
         self.data = self.connection.get_actions()
-        self.frame_step = MOVES_PER_FRAME - 1
 
-        if MOVES_PER_FRAME > 1:
-            self.frame_step -= 1
 
     # win check
     team1_alive = 0
@@ -51,9 +51,9 @@ def step(self):
 
     # TODO Winning
     if team1_alive >= len(self.team1):
-        pass
+        info = {'game_done': True}
     elif team2_alive >= len(self.team2):
-        pass
+        info = {'game_done': True}
 
 
     # Move bullets
@@ -121,9 +121,16 @@ def step(self):
             else:
                 self.move_obj_on_maps(self.bullets[i], 3, old_xy, old_coords)
 
+    # MOVES_PER_FRAME mechanics. first part of function is at the start of function
+    if self.frame_step <= 0:
+        self.steps += 1
+        self.send_data_to_players(info)
+        self.frame_step = MOVES_PER_FRAME - 1
+    # if MOVES_PER_FRAME = 1, frame_step always will be 0
+    else:
+        if MOVES_PER_FRAME > 1:
+            self.frame_step -= 1
 
-    self.steps += 1
-    self.send_data_to_players()
 
 setattr(TankGame, 'step', step)
 

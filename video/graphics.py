@@ -81,7 +81,6 @@ def play_video(game):
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
 
 
-
     DISPLAY.blit(background, (0, 0))
     for tank in game.team1:
         # TODO check by hp, if == 0 than show dead tank

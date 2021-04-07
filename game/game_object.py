@@ -81,23 +81,23 @@ class TankGame():
 
         self.map_generate()
         # sending ENV to network connection
-        self.send_data_to_players()
+        self.send_data_to_players({'game_start': True})
 
 
 
-    def send_data_to_players(self):
+    def send_data_to_players(self, info):
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
             idd = self.team1[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team1,
                     [copy(self.rewards[idd][self.steps][0]), self.team1[i].X, self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
-                     self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition])
+                     self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition], info)
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
             idd = self.team2[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team2,
                     [copy(self.rewards[idd][self.steps][0]), self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
-                     self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition])
+                     self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition], info)
 
 
     # Making input for players
@@ -249,7 +249,7 @@ class TankGame():
 
         del(team_free_cells)
 
-
+    # {id, step, [reward, comment]}
     def reward(self, id_tank, score, comment):
         self.rewards[id_tank][self.steps][0] += score
         self.rewards[id_tank][self.steps][1] += (comment + ',')
