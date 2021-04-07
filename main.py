@@ -6,8 +6,6 @@ import time
 
 
 
-
-
 VIDEO = True
 
 if VIDEO:
@@ -46,5 +44,8 @@ while True:
           'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |')
     # print('bullets fired:', len(Game.bullets), 'in fly:', len(Game.bullets_in_act))
     Game.step()
+    # stop game check
+    if Game.connection.info_from_server['game_done']:
+        break
     frame += 1
 

@@ -80,8 +80,8 @@ def play_video(game):
     # DISPLAY.blit(coll_map2, (0, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
 
-
     DISPLAY.blit(background, (0, 0))
+
     for tank in game.team1:
         # TODO check by hp, if == 0 than show dead tank
         tank_body = pygame.transform.rotate(img_tank_base, tank.direction_tank*360)
@@ -109,5 +109,5 @@ def play_video(game):
 
 
 
-pygame.display.update()
-time.sleep(1 / FRAME_RATE)
+    pygame.display.update()
+    time.sleep(1 / FRAME_RATE)

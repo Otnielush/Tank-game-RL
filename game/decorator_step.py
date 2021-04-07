@@ -11,7 +11,6 @@ def step(self):
     if self.frame_step <= 0:
         self.data = self.connection.get_actions()
 
-
     # win check
     team1_alive = 0
     team2_alive = 0
@@ -50,9 +49,9 @@ def step(self):
 
 
     # TODO Winning
-    if team1_alive >= len(self.team1):
+    if team1_alive <= 0:
         info = {'game_done': True}
-    elif team2_alive >= len(self.team2):
+    elif team2_alive <= 0:
         info = {'game_done': True}
 
 
