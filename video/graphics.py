@@ -4,7 +4,7 @@ import numpy as np
 import os
 import time
 
-MULTY_PIXEL *= 10
+MULTY_PIXEL = 50
 
 # run display
 pygame.init()
@@ -46,8 +46,10 @@ def play_video(game):
     turn = 0
     tower = 0
     shot = False
-    coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.map[:, :, :3] * 255), 0)
+    coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.connection.env_from_server[0][:, :, :3] * 255), 0)
     coll_map = pygame.transform.scale(coll_map, (WIDTH * MULTY_PIXEL, HEIGHT * MULTY_PIXEL))
+    # coll_map2 = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_coll[:, :, :3] * 255), 0)
+    # coll_map2 = pygame.transform.scale(coll_map2, (WIDTH * MULTY_PIXEL, HEIGHT * MULTY_PIXEL))
 
     # features_nn = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_env[:, :, :3] * 255), 0)
     # features_nn = pygame.transform.scale(features_nn, (WIDTH * MULTY_PIXEL, HEIGHT * MULTY_PIXEL))
@@ -71,17 +73,21 @@ def play_video(game):
             if event.key == pygame.K_d:
                 tower = -1
 
+        # for hand control
         game.connection.send_action(0, [move, turn, tower, shot, False])
 
     DISPLAY.blit(coll_map, (DISPLAY.get_width() // 2, 0))
+    # DISPLAY.blit(coll_map2, (0, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
+
+
 
     DISPLAY.blit(background, (0, 0))
     for tank in game.team1:
         # TODO check by hp, if == 0 than show dead tank
         tank_body = pygame.transform.rotate(img_tank_base, tank.direction_tank*360)
-        tank_rect = tank_body.get_rect(center=(tank_width//2, tank_height//2))
-        DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL + tank.crop_x + tank_rect[0], tank.Y*MULTY_PIXEL + tank_rect[1]))
+        # tank_rect = tank_body.get_rect(center=((tank_width//2), (tank_height//2)))
+        DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL, tank.Y*MULTY_PIXEL))
 
         # angle = tank.direction_tank+tank.direction_tower
         # xx = 0.6*0.5 * np.cos(np.pi * 2 * angle) - 1*0.5 * np.sin(
@@ -91,18 +97,18 @@ def play_video(game):
         # print(round(angle, 2), 'x:', round(xx, 1), 'y:', round(yy, 1))
         tower = pygame.transform.rotate(img_tank_tower, (tank.direction_tank+tank.direction_tower) * 360)
         tower_rect = tower.get_rect()
-        DISPLAY.blit(tower, (tower_rect[0] + tank.X * MULTY_PIXEL+ tank.crop_x, tower_rect[1] + (tank.Y) * MULTY_PIXEL)) # (tank.X * MULTY_PIXEL + tower.get_width()//2, tank.Y * MULTY_PIXEL + tower.get_height()//2))
+        DISPLAY.blit(tower, (tower_rect[0] + tank.X* MULTY_PIXEL+ tank.crop_x, tower_rect[1] + tank.Y * MULTY_PIXEL + tank.crop_y)) # (tank.X * MULTY_PIXEL + tower.get_width()//2, tank.Y * MULTY_PIXEL + tower.get_height()//2))
 
     for tank in game.team2:
         tank_body = pygame.transform.rotate(img_tank_base, tank.direction_tank * 360)
         tank_rect = tank_body.get_rect(center=(tank_width // 2, tank_height // 2))
-        DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL + tank.crop_x + tank_rect[0], tank.Y * MULTY_PIXEL + tank_rect[1]))
+        DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL + tank_rect[0], tank.Y * MULTY_PIXEL + tank_rect[1]))
 
     # Bullets
     for i in game.bullets_in_act:
         pygame.draw.circle(DISPLAY, (255,0,0), (game.bullets[i].X*MULTY_PIXEL,  game.bullets[i].Y*MULTY_PIXEL), 3)
 
 
-    pygame.display.update()
-    time.sleep(1/FRAME_RATE)
 
+pygame.display.update()
+time.sleep(1 / FRAME_RATE)

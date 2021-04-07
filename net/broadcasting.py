@@ -22,7 +22,7 @@ class net_connection():
         self.deleting_last_action = deleting_last_action
 
     # input id player, (width, height, num layers)
-    # data: hp, speed, time to reload: ammo, skill; ammunition
+    # data: upper
     def send_env_to_players(self, id, env, data):
         self.env_from_server[id] = env
         self.data_from_server[id] = data

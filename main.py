@@ -42,8 +42,8 @@ time_start = time.time()
 frame = 1
 while True:
     graphics.play_video(Game)
-    print('speed:', round(Game.team1[0].speed, 3), 'dir:', round(Game.team1[0].direction_tank, 2), 'FPS:', round(frame/(time.time()-time_start), 1),
-          'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |\n')
+    print('\rspeed:', round(Game.team1[0].speed, 3), 'dir:', round(Game.team1[0].direction_tank, 2), 'FPS:', round(frame/(time.time()-time_start), 1),
+          'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |')
     # print('bullets fired:', len(Game.bullets), 'in fly:', len(Game.bullets_in_act))
     Game.step()
     frame += 1

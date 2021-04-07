@@ -55,20 +55,20 @@ class Tank():
         # last placement of tank
         self.calc_tank_coordinates()
 
-
-
     def __str__(self):
         atts = self.__dict__
         return 'Tank\n'+'\n'.join([str(x)+': '+str(self.__dict__[x]) for x in atts])
 
+
     # return coordinates of rotated tank on map from 0
+    # TODO now when rotating coordinates is left top corner, need to change to center of object
     def calc_tank_coordinates(self,  x_pos=0, y_pos=0):
         xx = self.tank_coor_xy[0] * np.cos(np.pi * 2 * -self.direction_tank) - self.tank_coor_xy[1] * np.sin(np.pi * 2 * -self.direction_tank)
         yy = self.tank_coor_xy[0] * np.sin(np.pi * 2 * -self.direction_tank) + self.tank_coor_xy[1] * np.cos(np.pi * 2 * -self.direction_tank)
 
-        xx = xx + (self.crop_x + x_pos - int(xx.min()/2))
+        xx = xx + (self.crop_x + x_pos - int(xx.min() / 2))
         yy = yy + (self.crop_y + y_pos) - yy.min()
-        self.coords_xy = [np.rint(xx).astype(int), np.rint(yy).astype(int)]
+        self.coords_xy = [xx.round().astype(int), yy.round().astype(int)]
 
 
     # turning tank body, turning tower
@@ -184,7 +184,7 @@ class Tank():
         elif side == 'back':
             damage_dealed = dmg - self.armor_back
 
-        damage_dealed = min(damage_dealed, self.hp)
+        damage_dealed = round(min(max(damage_dealed, 0), self.hp), 2)
         self.hp -= damage_dealed
 
         # death
@@ -192,7 +192,7 @@ class Tank():
             self.speed = 0
             self.speed_x = 0
             self.speed_y = 0
-        print('damaged:', side, damage_dealed)
+        # print('\ndamaged:', side, damage_dealed)
         return damage_dealed
 
 

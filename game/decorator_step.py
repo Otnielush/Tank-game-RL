@@ -63,7 +63,6 @@ def step(self):
         if hit:
             # check if tank damaged
             if self.bullets[i].damaged_target_id > 100:
-                # TODO STOPPED HERE
                 # move from array to new array
                 self.bullets_in_act.remove(self.bullets[i].id_game - 200)
                 # calculate angle of hitting target, angle 0 - down; 0.5 - up
@@ -80,30 +79,44 @@ def step(self):
                     side = 'left'
                 else:
                     side = 'front'
-                print('angle:', angle_diff,'dir:',self.id_tanks[self.bullets[i].damaged_target_id].direction_tank,'bul:', self.bullets[i].angle, end=' ')
+                print('\nangle:', round(angle_diff,3),
+                      'dir:',round(self.id_tanks[self.bullets[i].damaged_target_id].direction_tank,3),
+                      'bul:', round(self.bullets[i].angle, 3))
+                # calc dmg and hp to damaged tank
                 dmg_dealed = self.id_tanks[self.bullets[i].damaged_target_id].damaged(self.bullets[i].damage_dealed_potencial, side)
 
-                # calc dmg and hp to damaged tank
-                # if its wall -> broke or calc hp
                 # give reward to shooter according to dmg and hit
                 self.reward(self.bullets[i].parent.id_game - self.ID_START, self.score_hit+self.score_dmg*dmg_dealed, 'hit id: {} dmg: {}'.format(
-                    str(self.bullets[i].damaged_target_id - self.ID_START), dmg_dealed))
+                    str(int(self.bullets[i].damaged_target_id) - self.ID_START), dmg_dealed))
+                # penalty to damaged tank
+                self.reward(int(self.bullets[i].damaged_target_id) - self.ID_START,
+                            self.score_take_hit + self.score_take_dmg * dmg_dealed, 'took dmg from id: {} dmg: {}'.format(
+                        str(self.bullets[i].parent.id_game - self.ID_START), dmg_dealed))
                 self.bullets[i].damaged_target_id
 
             # obstacles hit
+            # if its wall -> broke or calc hp
             else:
                 self.bullets_in_act.remove(self.bullets[i].id_game - 200)
-                if self.bullets[i].destroy:
-                    pass
+                # if its wall and bullet type can destroy
+                if self.bullets[i].damaged_target_id == self.map_obs_d['wall'] and self.bullets[i].destroy:
+                    # erase wall from map
+                    self.map[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
+                                int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
+                    # map environment
+                    self.map_env[int(self.bullets[i].X), int(self.bullets[i].Y), 0] = 0
+                    # map collision
+                    self.map_coll[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
+                                int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
 
-            # erasing from maps
+            # erasing bullet from maps
             self.map[old_coords[0], old_coords[1], 3] = 0
-            self.map_env[int(old_xy[0]), int(old_xy[1]), 3] = 0
+            self.map_env[round(old_xy[0]), round(old_xy[1]), 3] = 0
         else:
             if self.bullets[i].done:
                 # erasing from maps
                 self.map[old_coords[0], old_coords[1], 3] = 0
-                self.map_env[int(old_xy[0]), int(old_xy[1]), 3] = 0
+                self.map_env[round(old_xy[0]), round(old_xy[1]), 3] = 0
                 self.bullets_in_act.remove(self.bullets[i].id_game - 200)
             else:
                 self.move_obj_on_maps(self.bullets[i], 3, old_xy, old_coords)
@@ -112,7 +125,6 @@ def step(self):
     self.steps += 1
     self.send_data_to_players()
 
-
 setattr(TankGame, 'step', step)
 
 
@@ -120,9 +132,9 @@ def move_obj_on_maps(self, obj, layer, old_xy, old_coords):
     self.map_coll[obj.coords_xy[0], obj.coords_xy[1], 1 if layer < 3 else 2] = obj.id_game
     self.map[old_coords[0], old_coords[1], layer] = 0
     self.map[obj.coords_xy[0], obj.coords_xy[1], layer] = self.tank_type_d[obj.type] if layer < 3 else 1
-    self.map_env[int(old_xy[0]), int(old_xy[1]), layer] = 0
-    self.map_env[int(obj.X): int(obj.X+max(obj.width, 1)),
-                    int(obj.Y): int(obj.Y + max(obj.height, 1)), layer] = self.tank_type_d[obj.type] if layer < 3 else 1
+    self.map_env[round(old_xy[0]), round(old_xy[1]), layer] = 0
+    self.map_env[round(obj.X): round(obj.X+max(obj.width, 1)),
+                    round(obj.Y): round(obj.Y + max(obj.height, 1)), layer] = self.tank_type_d[obj.type] if layer < 3 else 1
 
 
 setattr(TankGame, 'move_obj_on_maps', move_obj_on_maps)
