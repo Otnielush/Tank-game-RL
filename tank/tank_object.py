@@ -4,7 +4,7 @@ from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
-t_simple        = [100,   20,       2,              5,             1,          20/360,          40/360,     'normal',       10,             7,           2,           50,           6]
+t_simple        = [100,   20,       2,              5,             1,          40/360,          60/360,     'normal',       10,             7,           2,           50,           6]
 
 
 class Tank():
@@ -12,6 +12,7 @@ class Tank():
         # map placement
         self.X = x
         self.Y = y
+
         # TODO move this 2 to tank features
         self.width = 0.6
         self.height = 1
@@ -34,6 +35,7 @@ class Tank():
         self.direction_tower = 0  # 0 - same direction with body. More 0 - rotation right. Less 0 - rotation left
         self.reloading_ammo = 0  # seconds left
         self.reloading_skill = 0
+        self.capture_points = 0
 
         # Building attributes by tank type
         for (key, value) in zip(tank_features, t_simple):
@@ -184,7 +186,7 @@ class Tank():
         elif side == 'back':
             damage_dealed = dmg - self.armor_back
 
-        damage_dealed = round(min(max(damage_dealed, 0), self.hp), 2)
+        damage_dealed = round(min(max(damage_dealed, 0), self.hp))
         self.hp -= damage_dealed
 
         # death
@@ -192,7 +194,7 @@ class Tank():
             self.speed = 0
             self.speed_x = 0
             self.speed_y = 0
-        # print('\ndamaged:', side, damage_dealed)
+        print('\ndamaged:', side, damage_dealed)
         return damage_dealed
 
 

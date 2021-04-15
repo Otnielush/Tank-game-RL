@@ -26,6 +26,7 @@ class TankGame():
 
         # SCORES
         self.score_win              = 5
+        self.score_lose             = -5
         self.score_hit              = 1
         self.score_kill             = 2
         self.score_dmg              = 0.01
@@ -37,6 +38,7 @@ class TankGame():
         self.score_shot             = -0.01
         self.score_take_hit         = self.score_hit * -0.5
         self.score_take_dmg         = self.score_dmg * -1
+        self.score_capture          = 0.01
 
 
         self.data = 0
@@ -166,10 +168,12 @@ class TankGame():
 
     def build_collision_map(self):
         self.map_coll[:, :, 0] = np.rint(self.map[:, :, 0] - 0.35) * self.map[:, :, 0]  # 1 - Wall, 1 - Rock, all other - 0
-        self.map_coll[self.PIX_CELL:self.PIX_CELL*(self.width-2), self.PIX_CELL:self.PIX_CELL*2, 0] = \
-            self.map[self.PIX_CELL:self.PIX_CELL*(self.width-2), self.PIX_CELL:self.PIX_CELL*2, 1]  # base team 1
-        self.map_coll[self.PIX_CELL:self.PIX_CELL * (self.width - 2), self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), 0] = \
-            self.map[self.PIX_CELL:self.PIX_CELL * (self.width - 2), self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), 2]  # base team 2
+        # base team 1
+        # self.map_coll[self.PIX_CELL:self.PIX_CELL*(self.width-2), self.PIX_CELL:self.PIX_CELL*2, 0] = \
+            # self.map[self.PIX_CELL:self.PIX_CELL*(self.width-2), self.PIX_CELL:self.PIX_CELL*2, 1]
+        # base team 2
+        # self.map_coll[self.PIX_CELL:self.PIX_CELL * (self.width - 2), self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), 0] = \
+        #     self.map[self.PIX_CELL:self.PIX_CELL * (self.width - 2), self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), 2]
 
 
     def map_generate(self):

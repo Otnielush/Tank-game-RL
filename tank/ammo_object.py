@@ -7,7 +7,7 @@ ammo_types = ['normal', 'rocket', 'bomb', 'jet', 'laser', 'electricity', 'mine',
 # max_distance - deal 0 dmg, at start - 100%; destroy - can destroy obstacles; artillery_fly - fly over obstacles to target
 # explossion - makes area dmg; expl_range - explossion range
 ammo_features = ['speed', 'max_distance', 'destroy', 'artillery_fly', 'explossion', 'expl_range']  # distance - at start-max dmg, at end-0
-a_normal      = [   4,          9,          True,       False,             False,           0]
+a_normal      = [   4,          11,          True,       False,             False,           0]
 
 
 class Ammo():

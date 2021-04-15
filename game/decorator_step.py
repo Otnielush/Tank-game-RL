@@ -1,19 +1,25 @@
 from .game_object import TankGame
 import numpy as np
 from tank.ammo_object import Ammo
-from options.video import MOVES_PER_FRAME
+from options.video import MOVES_PER_FRAME, WIDTH, HEIGHT, FRAME_RATE
+
+Capture_points_win = HEIGHT*WIDTH*FRAME_RATE
+
 
 # calculate moves from actions
 # observation, reward, done, info = env.step(actions)  - must be like that
 def step(self):
     info = None
     # MOVES_PER_FRAME mechanics. second part of function is at the end of function
+    # TODO destroied tank
     if self.frame_step <= 0:
         self.data = self.connection.get_actions()
 
     # win check
     team1_alive = 0
     team2_alive = 0
+    team1_capture_points = 0
+    team2_capture_points = 0
 
     # Move Tanks
     #  coll_map, accelerate, turn_body, turn_tower, shot, skill
@@ -24,6 +30,12 @@ def step(self):
             old_xy, old_coords, shot, skill = self.team1[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
+            # capture points
+            if self.map[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 2].any() == 1:
+                self.team1[i].capture_points += 1
+                team1_capture_points += self.team1[i].capture_points
+            elif self.team1[i].capture_points > 0:
+                self.team1[i].capture_points = 0
 
             if shot:
                 # tank, id
@@ -40,6 +52,12 @@ def step(self):
             old_xy, old_coords, shot, skill = self.team2[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
+            # capture points
+            if self.map[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 1].any() == 1:
+                self.team2[i].capture_points += 1
+                team2_capture_points += self.team2[i].capture_points
+            elif self.team2[i].capture_points > 0:
+                self.team2[i].capture_points = 0
 
             if shot:
                 self.bullets.append(Ammo(self.team2[i], self.id_bul))
@@ -49,10 +67,23 @@ def step(self):
 
 
     # TODO Winning
-    if team1_alive <= 0:
+    # team 2 WIN
+    if team1_alive <= 0 or team2_capture_points > Capture_points_win:
         info = {'game_done': True}
-    elif team2_alive <= 0:
+        # rewards
+        for t in self.team2:
+            self.reward(t.id_game - self.ID_START, t.capture_points * self.score_capture, 'for capture')
+            self.reward(t.id_game - self.ID_START, self.score_win, 'win')
+        for t in self.team1:
+            self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
+    elif team2_alive <= 0 or team1_capture_points > Capture_points_win:
         info = {'game_done': True}
+        # rewards
+        for t in self.team1:
+            self.reward(t.id_game - self.ID_START, t.capture_points*self.score_capture, 'for capture')
+            self.reward(t.id_game - self.ID_START, self.score_win, 'win')
+        for t in self.team2:
+            self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
 
 
     # Move bullets
@@ -78,9 +109,7 @@ def step(self):
                     side = 'left'
                 else:
                     side = 'front'
-                print('\nangle:', round(angle_diff,3),
-                      'dir:',round(self.id_tanks[self.bullets[i].damaged_target_id].direction_tank,3),
-                      'bul:', round(self.bullets[i].angle, 3))
+
                 # calc dmg and hp to damaged tank
                 dmg_dealed = self.id_tanks[self.bullets[i].damaged_target_id].damaged(self.bullets[i].damage_dealed_potencial, side)
 

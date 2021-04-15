@@ -1,7 +1,7 @@
 import game.game as gg
 import player.player as Player
 import matplotlib.pyplot as plt
-from options.video import WIDTH, HEIGHT, MULTY_PIXEL
+from options.video import WIDTH, HEIGHT, MULTY_PIXEL, FRAME_RATE
 import time
 
 
@@ -38,14 +38,18 @@ Game.connection.send_action(3, [0.1, 0.0, 0, False, False])
 
 time_start = time.time()
 frame = 1
+
+graphics.video_build_map(Game)
 while True:
     graphics.play_video(Game)
     print('\rspeed:', round(Game.team1[0].speed, 3), 'dir:', round(Game.team1[0].direction_tank, 2), 'FPS:', round(frame/(time.time()-time_start), 1),
-          'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |')
+          'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), 'capt points:', Game.team1[0].capture_points, end=' |')
     # print('bullets fired:', len(Game.bullets), 'in fly:', len(Game.bullets_in_act))
     Game.step()
     # stop game check
     if Game.connection.info_from_server['game_done']:
         break
     frame += 1
+
+
 
