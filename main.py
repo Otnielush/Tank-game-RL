@@ -42,12 +42,12 @@ frame = 1
 graphics.video_build_map(Game)
 while True:
     graphics.play_video(Game)
-    print('\rspeed:', round(Game.team1[0].speed, 3), 'dir:', round(Game.team1[0].direction_tank, 2), 'FPS:', round(frame/(time.time()-time_start), 1),
+    print('\rspeed:', round(Game.team1[0].speed, 3), 'FPS:', round(frame/(time.time()-time_start), 1),
           'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), 'capt points:', Game.team1[0].capture_points, end=' |')
     # print('bullets fired:', len(Game.bullets), 'in fly:', len(Game.bullets_in_act))
-    Game.step()
+    done = Game.step()
     # stop game check
-    if Game.connection.info_from_server['game_done']:
+    if done:
         break
     frame += 1
 

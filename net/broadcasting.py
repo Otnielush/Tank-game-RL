@@ -13,7 +13,10 @@ class net_connection():
         self.env_size = env_size
         self.act_size = act_size
         self.env_from_server = np.zeros((num_players,) + env_size)
-        self.data_from_server = np.zeros((num_players,) + (data_size,))  #10: reward, x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill); ammunition
+
+        # 12: reward, x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
+        # ammunition; round time left in %
+        self.data_from_server = np.zeros((num_players,) + (data_size,))
         self.info_from_server = {'game_start': False, 'game_done': False}  # game_start - starting new game; game_done - game finished
         self.data_from_players = np.zeros((num_players,) + act_size)
 

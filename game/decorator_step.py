@@ -1,6 +1,6 @@
 from .game_object import TankGame
-import numpy as np
 from tank.ammo_object import Ammo
+import time
 from options.video import MOVES_PER_FRAME, WIDTH, HEIGHT, FRAME_RATE
 
 Capture_points_win = HEIGHT*WIDTH*FRAME_RATE
@@ -10,12 +10,17 @@ Capture_points_win = HEIGHT*WIDTH*FRAME_RATE
 # observation, reward, done, info = env.step(actions)  - must be like that
 def step(self):
     info = None
+    done = False
+    win_draw = False
     # MOVES_PER_FRAME mechanics. second part of function is at the end of function
     # TODO destroied tank
     if self.frame_step <= 0:
         self.data = self.connection.get_actions()
 
-    # win check
+    # Timer
+    timer = time.perf_counter() - self.time_start
+
+    # Win check
     team1_alive = 0
     team2_alive = 0
     team1_capture_points = 0
@@ -66,26 +71,6 @@ def step(self):
                 self.reward(idd, self.score_shot, 'shot')
 
 
-    # TODO Winning
-    # team 2 WIN
-    if team1_alive <= 0 or team2_capture_points > Capture_points_win:
-        info = {'game_done': True}
-        # rewards
-        for t in self.team2:
-            self.reward(t.id_game - self.ID_START, t.capture_points * self.score_capture, 'for capture')
-            self.reward(t.id_game - self.ID_START, self.score_win, 'win')
-        for t in self.team1:
-            self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
-    elif team2_alive <= 0 or team1_capture_points > Capture_points_win:
-        info = {'game_done': True}
-        # rewards
-        for t in self.team1:
-            self.reward(t.id_game - self.ID_START, t.capture_points*self.score_capture, 'for capture')
-            self.reward(t.id_game - self.ID_START, self.score_win, 'win')
-        for t in self.team2:
-            self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
-
-
     # Move bullets
     for i in self.bullets_in_act:
         old_xy, old_coords, hit = self.bullets[i].move(self.map_coll)
@@ -120,7 +105,6 @@ def step(self):
                 self.reward(int(self.bullets[i].damaged_target_id) - self.ID_START,
                             self.score_take_hit + self.score_take_dmg * dmg_dealed, 'took dmg from id: {} dmg: {}'.format(
                         str(self.bullets[i].parent.id_game - self.ID_START), dmg_dealed))
-                self.bullets[i].damaged_target_id
 
             # obstacles hit
             # if its wall -> broke or calc hp
@@ -149,6 +133,46 @@ def step(self):
             else:
                 self.move_obj_on_maps(self.bullets[i], 3, old_xy, old_coords)
 
+
+    # TODO Winning
+    # team 2 WIN
+    # eluminate all team; capture base
+    if team1_alive <= 0 or team2_capture_points > Capture_points_win:
+        if team2_alive <= 0:
+            win_draw = True
+        else:
+            info = {'game_done': True}
+            done = True
+            # rewards
+            for t in self.team2:
+                self.reward(t.id_game - self.ID_START, t.capture_points * self.score_capture, 'for capture')
+                self.reward(t.id_game - self.ID_START, self.score_win, 'win')
+            for t in self.team1:
+                self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
+
+    elif team2_alive <= 0 or team1_capture_points > Capture_points_win:
+        info = {'game_done': True}
+        done = True
+        # rewards
+        for t in self.team1:
+            self.reward(t.id_game - self.ID_START, t.capture_points*self.score_capture, 'for capture')
+            self.reward(t.id_game - self.ID_START, self.score_win, 'win')
+        for t in self.team2:
+            self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
+
+    # Draw: all dead or time gone
+    if win_draw or timer > self.time_round_len:
+        info = {'game_done': True}
+        done = True
+        # rewards
+        for t in self.team1:
+            self.reward(t.id_game - self.ID_START, t.capture_points*self.score_capture, 'for capture')
+            self.reward(t.id_game - self.ID_START, self.score_win + self.score_lose, 'draw')
+        for t in self.team2:
+            self.reward(t.id_game - self.ID_START, t.capture_points * self.score_capture, 'for capture')
+            self.reward(t.id_game - self.ID_START, self.score_win + self.score_lose, 'draw')
+
+
     # MOVES_PER_FRAME mechanics. first part of function is at the start of function
     if self.frame_step <= 0:
         self.steps += 1
@@ -158,9 +182,11 @@ def step(self):
     else:
         if MOVES_PER_FRAME > 1:
             self.frame_step -= 1
-
+    print('time:', timer, end='')
+    return done
 
 setattr(TankGame, 'step', step)
+
 
 
 def move_obj_on_maps(self, obj, layer, old_xy, old_coords):
