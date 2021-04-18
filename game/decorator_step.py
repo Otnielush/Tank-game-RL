@@ -2,6 +2,7 @@ from .game_object import TankGame
 from tank.ammo_object import Ammo
 import time
 from options.video import MOVES_PER_FRAME, WIDTH, HEIGHT, FRAME_RATE
+from video.graphics import land, background, MULTY_PIXEL_V
 
 Capture_points_win = HEIGHT*WIDTH*FRAME_RATE
 
@@ -120,6 +121,9 @@ def step(self):
                     # map collision
                     self.map_coll[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
                                 int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
+                    if self.VIDEO:
+                        global background, MULTY_PIXEL_V
+                        background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
 
             # erasing bullet from maps
             self.map[old_coords[0], old_coords[1], 3] = 0
@@ -134,7 +138,7 @@ def step(self):
                 self.move_obj_on_maps(self.bullets[i], 3, old_xy, old_coords)
 
 
-    # TODO Winning
+    # TODO info results of match
     # team 2 WIN
     # eluminate all team; capture base
     if team1_alive <= 0 or team2_capture_points > Capture_points_win:
@@ -149,7 +153,7 @@ def step(self):
                 self.reward(t.id_game - self.ID_START, self.score_win, 'win')
             for t in self.team1:
                 self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
-
+    # Team 1 WIN
     elif team2_alive <= 0 or team1_capture_points > Capture_points_win:
         info = {'game_done': True}
         done = True
@@ -174,7 +178,7 @@ def step(self):
 
 
     # MOVES_PER_FRAME mechanics. first part of function is at the start of function
-    if self.frame_step <= 0:
+    if self.frame_step <= 0 or done:
         self.steps += 1
         self.send_data_to_players(info)
         self.frame_step = MOVES_PER_FRAME - 1

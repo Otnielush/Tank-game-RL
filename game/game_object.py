@@ -49,9 +49,10 @@ class TankGame():
 
     # start new round with array of connected players [player, ...]
     # id starts from 101
-    def new_game(self, width, height, team1_payers, team2_payers):
+    def new_game(self, width, height, team1_payers, team2_payers, VIDEO):
         self.width = width
         self.height = height
+        self.VIDEO = VIDEO
 
         self.steps = 0
         self.team1 = []  # [Tank]

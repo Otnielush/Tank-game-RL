@@ -1,7 +1,8 @@
 
 
+
 # Steps: create object, change_tank_type, new game -> connected_new_game
-class player_AI():
+class player_obj():
     def __init__(self, name, difficulty=1):
         self.id_connection = 0
         self.id_game = 0
@@ -33,10 +34,10 @@ class player_AI():
         self.tank_type = type
 
     def move(self):
-        self.env = self.connection.get_env_from_server(self.id)
-        return self.action_function()
+        self.env, self.data, self.info = self.connection.get_env_from_server(self.id)
+        action = self.action_function()
 
-    # TODO func for save env and rewards
-
-
+        # TODO stopped here
+        # TODO change id for tanks. player dont know ID_START - write it in broadcasting
+        self.connection.send_action(self.id_game, action)
 

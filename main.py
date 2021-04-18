@@ -8,8 +8,7 @@ import time
 
 VIDEO = True
 
-if VIDEO:
-    from video import graphics
+
 
 
 
@@ -26,7 +25,7 @@ team2[2].change_tank_type(t_type); team2[2].change_id(246)
 
 
 Game = gg.TankGame(MULTY_PIXEL)
-Game.new_game(WIDTH, HEIGHT, team1, team2)
+Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
 
 
 
@@ -39,15 +38,25 @@ Game.connection.send_action(3, [0.1, 0.0, 0, False, False])
 time_start = time.time()
 frame = 1
 
-graphics.video_build_map(Game)
+if VIDEO:
+    from video import graphics
+    graphics.video_build_map(Game)
+
 while True:
-    graphics.play_video(Game)
+    if VIDEO:
+        graphics.play_video(Game)
+
     print('\rspeed:', round(Game.team1[0].speed, 3), 'FPS:', round(frame/(time.time()-time_start), 1),
           'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), 'capt points:', Game.team1[0].capture_points, end=' |')
     # print('bullets fired:', len(Game.bullets), 'in fly:', len(Game.bullets_in_act))
     done = Game.step()
     # stop game check
     if done:
+        # for training, TODO change to net connection so that the game and the players would be a different programs
+        for t in Game.team1:
+            t.move()
+        for t in Game.team2:
+            t.move()
         break
     frame += 1
 
