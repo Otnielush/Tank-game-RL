@@ -41,3 +41,6 @@ class player_obj():
         # TODO change id for tanks. player dont know ID_START - write it in broadcasting
         self.connection.send_action(self.id_game, action)
 
+    # game round done
+    def done(self):
+        pass

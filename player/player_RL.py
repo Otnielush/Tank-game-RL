@@ -1,7 +1,7 @@
 from numpy import argmax
 from .player_superclass import player_obj
 from collections import deque
-import tensorflow
+# import tensorflow as tf
 
 
 # Main RL player
@@ -10,6 +10,10 @@ import tensorflow
 class player_RL(player_obj):
     def __init__(self, name):
         super(player_RL, self).__init__(name)
+
+    def done(self):
+        super(player_RL, self).done()
+        print('done')
 
     # TODO specify for RL
     def __str__(self):

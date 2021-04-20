@@ -67,13 +67,13 @@ class TankGame():
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_payers)):
-            self.team1.append(Tank(id_tank, team1_payers[i], 0, 0, self.PIX_CELL))
+            self.team1.append(Tank(id_tank, team1_payers[i], 1, 0, 0, self.PIX_CELL))
             team1_payers[i].change_id(id_game=id_tank)
             self.team1[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team1[-1]
             id_tank += 1
         for i in range(len(team2_payers)):
-            self.team2.append(Tank(id_tank, team2_payers[i], 0, 0, self.PIX_CELL))
+            self.team2.append(Tank(id_tank, team2_payers[i], 2, 0, 0, self.PIX_CELL))
             team2_payers[i].change_id(id_game=id_tank)
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team2[-1]

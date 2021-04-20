@@ -2,14 +2,16 @@ from .game_object import TankGame
 from tank.ammo_object import Ammo
 import time
 from options.video import MOVES_PER_FRAME, WIDTH, HEIGHT, FRAME_RATE
-from video.graphics import land, background, MULTY_PIXEL_V
+from video.graphics import land, background, MULTY_PIXEL_V, tank_destroyed
+from pygame.transform import rotate, scale
 
-Capture_points_win = HEIGHT*WIDTH*FRAME_RATE
+Capture_points_win = 60*FRAME_RATE
 
 
 # calculate moves from actions
 # observation, reward, done, info = env.step(actions)  - must be like that
 def step(self):
+    global background
     info = None
     done = False
     win_draw = False
@@ -71,6 +73,8 @@ def step(self):
                 self.id_bul += 1  # id of bullets
                 self.reward(idd, self.score_shot, 'shot')
 
+    #
+    print('Capture:', team1_capture_points, team2_capture_points, end=' |')
 
     # Move bullets
     for i in self.bullets_in_act:
@@ -99,13 +103,46 @@ def step(self):
                 # calc dmg and hp to damaged tank
                 dmg_dealed = self.id_tanks[self.bullets[i].damaged_target_id].damaged(self.bullets[i].damage_dealed_potencial, side)
 
-                # give reward to shooter according to dmg and hit
-                self.reward(self.bullets[i].parent.id_game - self.ID_START, self.score_hit+self.score_dmg*dmg_dealed, 'hit id: {} dmg: {}'.format(
-                    str(int(self.bullets[i].damaged_target_id) - self.ID_START), dmg_dealed))
-                # penalty to damaged tank
-                self.reward(int(self.bullets[i].damaged_target_id) - self.ID_START,
-                            self.score_take_hit + self.score_take_dmg * dmg_dealed, 'took dmg from id: {} dmg: {}'.format(
-                        str(self.bullets[i].parent.id_game - self.ID_START), dmg_dealed))
+                # team of damaged tank
+                tank_dmg_t = self.id_tanks[self.bullets[i].damaged_target_id].team_num
+                # team of fired tank
+                tank_frd_t = self.bullets[i].parent.team_num
+
+                # tank destroyed
+                if self.id_tanks[self.bullets[i].damaged_target_id].hp <= 0:
+                    # remove from maps
+                    self.map_env[round(self.id_tanks[self.bullets[i].damaged_target_id].X),
+                                 round(self.id_tanks[self.bullets[i].damaged_target_id].Y), tank_dmg_t] = 0
+                    self.map_coll[self.id_tanks[self.bullets[i].damaged_target_id].coords_xy[0],
+                                  self.id_tanks[self.bullets[i].damaged_target_id].coords_xy[1], 1] = 0
+                    if self.VIDEO[0]:
+                        tank_body = rotate(scale(tank_destroyed, (round(self.id_tanks[self.bullets[i].damaged_target_id].width*MULTY_PIXEL_V),
+                                                                  round(self.id_tanks[self.bullets[i].damaged_target_id].height*MULTY_PIXEL_V))),
+                                           self.id_tanks[self.bullets[i].damaged_target_id].direction_tank * 360 + 180)
+                        background.blit(tank_body, (self.id_tanks[self.bullets[i].damaged_target_id].X * MULTY_PIXEL_V,
+                                                    self.id_tanks[self.bullets[i].damaged_target_id].Y * MULTY_PIXEL_V))
+
+                # friendly fire check
+                # if not FF
+                if tank_frd_t != tank_dmg_t:
+                    # give reward to shooter according to dmg and hit
+                    self.reward(self.bullets[i].parent.id_game - self.ID_START, self.score_hit+self.score_dmg*dmg_dealed, 'hit id: {} dmg: {}'.format(
+                        str(int(self.bullets[i].damaged_target_id) - self.ID_START), dmg_dealed))
+                    # penalty to damaged tank
+                    self.reward(int(self.bullets[i].damaged_target_id) - self.ID_START,
+                                self.score_take_hit + self.score_take_dmg * dmg_dealed, 'took dmg from id: {} dmg: {}'.format(
+                            str(self.bullets[i].parent.id_game - self.ID_START), dmg_dealed))
+                # friendly fire
+                else:
+                    # give penalty to shooter according to dmg and hit
+                    self.reward(self.bullets[i].parent.id_game - self.ID_START,
+                                self.score_friendly_fire * self.score_dmg * dmg_dealed, 'hit friendly id: {} dmg: {}'.format(
+                            str(int(self.bullets[i].damaged_target_id) - self.ID_START), dmg_dealed))
+                    # penalty to damaged tank
+                    self.reward(int(self.bullets[i].damaged_target_id) - self.ID_START,
+                                self.score_take_hit + self.score_take_dmg * dmg_dealed,
+                                'took friendly dmg from id: {} dmg: {}'.format(
+                                    str(self.bullets[i].parent.id_game - self.ID_START), dmg_dealed))
 
             # obstacles hit
             # if its wall -> broke or calc hp
@@ -121,8 +158,7 @@ def step(self):
                     # map collision
                     self.map_coll[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
                                 int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
-                    if self.VIDEO:
-                        global background, MULTY_PIXEL_V
+                    if self.VIDEO[0]:
                         background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
 
             # erasing bullet from maps
@@ -186,7 +222,7 @@ def step(self):
     else:
         if MOVES_PER_FRAME > 1:
             self.frame_step -= 1
-    print('time:', timer, end='')
+    print('time:', round(timer), end='')
     return done
 
 setattr(TankGame, 'step', step)

@@ -4,6 +4,8 @@ import numpy as np
 import os
 import time
 
+
+
 MULTY_PIXEL_V = 50
 
 # run display
@@ -24,6 +26,7 @@ flag_red.fill((255,0,0,100), special_flags=pygame.BLEND_ADD)
 flag_blue = pygame.transform.scale(flag_pic, (MULTY_PIXEL_V, MULTY_PIXEL_V))
 flag_blue.fill((0,0,255,100), special_flags=pygame.BLEND_ADD)
 
+tank_destroyed = tank_obs3.subsurface((113, 112, 15, 15))
 temp = tank_obs3.subsurface((144, 48, 15, 15))
 land = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
 land.fill((139,69,19, 100), special_flags=pygame.BLEND_ADD)
@@ -128,8 +131,7 @@ def video_build_map(game):
                 background.blit(flag_blue, (x * MULTY_PIXEL_V, y * MULTY_PIXEL_V))
 
 # TODO play explosions from ammoes and tanks
-def play_video(game):
-    game_end = False
+def play_video(game, VIDEO):
     move = 0
     turn = 0
     tower = 0
@@ -143,8 +145,11 @@ def play_video(game):
     # features_nn = pygame.transform.scale(features_nn, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
 
     for event in pygame.event.get():
+        # closing window but not game
         if event.type == pygame.QUIT:
-            game_end = True
+            VIDEO[0] = False
+            pygame.quit()
+            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 move = 1

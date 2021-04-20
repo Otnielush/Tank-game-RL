@@ -4,11 +4,11 @@ from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
-t_simple        = [100,   20,       2,              5,             1,          40/360,          60/360,     'normal',       10,             7,           2,           50,           6]
+t_simple        = [10,   20,       2,              5,             1,          40/360,          60/360,     'normal',       10,             7,           2,           50,           6]
 
 
 class Tank():
-    def __init__(self, id_game, player, x, y, Pix_Cell):
+    def __init__(self, id_game, player, team_num, x, y, Pix_Cell):
         # map placement
         self.X = x
         self.Y = y
@@ -25,6 +25,7 @@ class Tank():
         self.player = player
         self.name = player.name
         self.id_game = id_game
+        self.team_num = team_num
         self.id_player = player.id_connection
         self.type = player.tank_type
         self.speed = 0  # without Pixel multiplier
