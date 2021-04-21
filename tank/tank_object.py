@@ -4,7 +4,7 @@ from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
-t_simple        = [10,   20,       2,              5,             1,          40/360,          60/360,     'normal',       10,             7,           2,           50,           6]
+t_simple        = [100,   20,       2,              5,             1,          40/360,          60/360,     'normal',       10,             7,           2,           50,           6]
 
 
 class Tank():

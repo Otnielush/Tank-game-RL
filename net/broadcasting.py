@@ -1,6 +1,7 @@
 # Emulation of net broadcastiong
 # Simple saving sended/received to variables
 
+from copy import copy, deepcopy
 import numpy as np
 
 
@@ -14,10 +15,13 @@ class net_connection():
         self.act_size = act_size
         self.env_from_server = np.zeros((num_players,) + env_size)
 
-        # 12: reward, x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
+        # reward,
+        # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
         # ammunition; round time left in %
+        self.reward_from_server = np.zeros((num_players, 1))
         self.data_from_server = np.zeros((num_players,) + (data_size,))
         self.info_from_server = {'game_start': False, 'game_done': False}  # game_start - starting new game; game_done - game finished
+
         self.data_from_players = np.zeros((num_players,) + act_size)
 
         # after getting action need to zeroing?
@@ -25,21 +29,26 @@ class net_connection():
         # backwards - repeating last action
         self.deleting_last_action = deleting_last_action
 
-    # input id player, (width, height, num layers)
-    # data, info: description upper
-    def send_env_to_players(self, id, env, data, info):
-        self.env_from_server[id] = env
-        self.data_from_server[id] = data
+    # input:
+    # env_map
+    # 12: DATA: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill); ammunition; round time left in %;
+    # reward; info(start game, game done);
+    def send_env_to_players(self, id, env, data, reward, info):
+        self.reward_from_server[id] = copy(reward)
+        self.env_from_server[id] = deepcopy(env)
+        self.data_from_server[id] = deepcopy(data)
         if info is not None:
             for key in info:
                 self.info_from_server[key] = info[key]
 
     # player asking for envinronment
     def get_env_from_server(self, id):
-        return self.env_from_server[id], self.data_from_server[id], self.info_from_server
+        id = id - 101
+        return self.env_from_server[id], self.data_from_server[id], self.reward_from_server[id], self.info_from_server
 
     # id of player, action
     def send_action(self, id, action):
+        id -= 101
         self.data_from_players[id] = action
 
     # server receive actions from players

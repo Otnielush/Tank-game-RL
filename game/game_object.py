@@ -63,7 +63,7 @@ class TankGame():
         self.bullets_in_act = []  # ids of bullets - id_bul ( for bullets array )
         self.id_bul = 200   # id bullets
         num_players = len(team1_payers) + len(team2_payers)
-        self.connection = net_connection(num_players, False, (width, height, 4), 11, (5,))
+        self.connection = net_connection(num_players, False, (width, height, 4), 10, (5,))
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_payers)):
@@ -97,17 +97,20 @@ class TankGame():
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
             idd = self.team1[i].id_game - self.ID_START
-            # 12: reward, x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
-            # ammunition; info(start game, game done); round time left in %
+            # env_map
+            # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill); ammunition; round time left in %;
+            # reward; info(start game, game done);
             self.connection.send_env_to_players(idd, env_team1,
-                    [copy(self.rewards[idd][self.steps][0]), self.team1[i].X, self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
-                     self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition, timer], info)
+                    [self.team1[i].X, self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
+                     self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition, timer],
+                    copy(self.rewards[idd][self.steps][0]), info)
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
             idd = self.team2[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team2,
-                    [copy(self.rewards[idd][self.steps][0]), self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
-                     self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition, timer], info)
+                    [self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
+                     self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition, timer],
+                    copy(self.rewards[idd][self.steps][0]), info)
 
 
     # Making input for players

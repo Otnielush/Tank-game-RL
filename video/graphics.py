@@ -167,7 +167,7 @@ def play_video(game, VIDEO):
                 tower = -1
 
         # for hand control
-        game.connection.send_action(0, [move, turn, tower, shot, False])
+        game.connection.send_action(101, [move, turn, tower, shot, False])
 
     DISPLAY.blit(coll_map2, (DISPLAY.get_width() // 2, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))

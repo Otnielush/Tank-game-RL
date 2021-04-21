@@ -2,6 +2,25 @@ from numpy import argmax
 from .player_superclass import player_obj
 from collections import deque
 # import tensorflow as tf
+import numpy as np
+from copy import copy
+
+
+LEARNING_RATE = 0.001
+ALPHA = 0.39  #  renew outputs
+BATCH_SIZE=256
+TIME_STEP_MEMORY=3
+
+NUM_EPOCHS = 20
+
+GAMMA = 0.96
+REPLAY_MEMORY_SIZE = 3000
+NUM_EPISODES = 10000
+TARGET_UPDATE_FREQ = 100
+MINIBATCH_SIZE = 1000
+
+RANDOM_ACTION_DECAY = 0.99
+INITIAL_RANDOM_ACTION = 1
 
 
 # Main RL player
@@ -10,53 +29,138 @@ from collections import deque
 class player_RL(player_obj):
     def __init__(self, name):
         super(player_RL, self).__init__(name)
+        self.action_function = action_function
+        self.replay_buffer = ReplayBuffer(REPLAY_MEMORY_SIZE)
+        self.old_observation = (0, 0, 0)
+        self.old_action = 0
 
     def done(self):
         super(player_RL, self).done()
-        print('done')
+        print(self.name, 'done')
 
     # TODO specify for RL
     def __str__(self):
-        return self.id
+        return self.id_game
 
-    # input data/info/environment/status of game
-    # output action to make move
-    def take_action(self, environment):
-        return argmax(self.model.predict(environment))
+    def move(self):
+        self.old_observation = (self.env, self.data, self.reward)
+        self.env, self.data, self.reward, self.info = self.connection.get_env_from_server(self.id_game)
+        # saving data for training
+        self.replay_buffer.add(self.old_observation[0], self.old_observation[1], self.old_action,
+                               self.reward, self.env, self.data)
+
+        # taking actions from model
+        # From tank obj:  accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
+        action = self.action_function(self)
+        self.old_action = copy(action)
+
+
+        # TODO stopped here
+        self.connection.send_action(self.id_game, action)
 
 
 
     # TODO func for save env and rewards
 
 
+if __name__ == '__main__':
+    pp = player_RL('Garry')
+    pp.move()
 
+
+# TODO each player have his folder with data
 
 # save all actions and data into game object or may be each player will save it himself
 class ReplayBuffer():
 
     def __init__(self, max_size):
         self.max_size = max_size
-        self.transitions = deque()
+        self.buffer = deque()
 
-    def add(self, observation, action, reward, observation2):
-        if len(self.transitions) > self.max_size:
-            self.transitions.popleft()
-        self.transitions.append((observation, action, reward, observation2))
+    # env + data = observation
+    def add(self, env, data, action, reward, env_new, data_new):
+        if len(self.buffer) > self.max_size:
+            self.buffer.popleft()
+        self.buffer.append((env, data, action, reward, env_new, data_new))
 
-    def sample(self, count):
-        # samples = deque(list(self.transitions)[len(self.transitions)-count:])
-        # self.transitions = deque(list(self.transitions)[:len(self.transitions)-count], self.max_size)
-        # return random.sample(samples, count)
-
-        # return random.sample(self.transitions, count)
-
-        # taking a random part of buffer
-        buffer_start = random.randint(0, len(self.transitions) - count)
-        return deque(itertools.islice(self.transitions, buffer_start, buffer_start + count))
+    # def sample(self, count):
+    #     # taking a random part of buffer
+    #     buffer_start = random.randint(0, len(self.buffer) - count)
+    #     return deque(itertools.islice(self.buffer, buffer_start, buffer_start + count))
 
     def size(self):
-        return len(self.transitions)
+        return len(self.buffer)
 
 
+# function with NN model
+def action_function(self):
+    pass
 
 
+# calculating rewards for train
+def update_action(action_model, sample_transitions):
+    # random.shuffle(sample_transitions)
+    batch_observations = []
+    batch_targets = []
+
+    for sample_transition in sample_transitions:
+        old_observation, action, reward, observation = sample_transition
+
+        targets = get_q(action_model, old_observation)[0]
+        next_step = 0
+        if observation is not None:
+            predictions = get_q(action_model, observation)
+            new_action = np.argmax(predictions)
+            next_step = GAMMA * predictions[0, new_action]
+
+        targets[action] = (reward + next_step) * ALPHA + targets[action] * (1 - ALPHA)
+        batch_observations.append(old_observation)
+        batch_targets.append(targets)
+
+    # prepare dataset for RNN
+    batch_obs_rnn = make_trainset_for_rnn(batch_observations, TIME_STEP_MEMORY)
+
+    return train(action_model, batch_obs_rnn, batch_targets)
+
+
+def make_trainset_for_rnn(env_ds, time_step):
+    time_step -= 1
+    shapes = list(np.array(env_ds).shape)
+    shapes.insert(1, time_step + 1)
+    new_env = np.zeros(shapes)
+
+    for i in range(len(env_ds)):
+        if i < time_step:
+            env_step = np.zeros(shapes[1:])
+            env_step[time_step - i:time_step + 1] = env_ds[:i + 1]
+            new_env[i] = env_step.copy()
+        else:
+            new_env[i] = env_ds[i - time_step:i + 1]
+    return new_env
+
+
+def train(model, observations, targets):
+    # np_obs = np.reshape(observations, [-1, 1, OBSERVATIONS_DIM])
+    np_obs = np.array(observations)
+    np_targets = np.reshape(targets, [-1, ACTIONS_DIM])
+
+    model.reset_states()  # need for LSTM
+    acc = model.fit(np_obs, np_targets, epochs=NUM_EPOCHS, verbose=0, batch_size=BATCH_SIZE, shuffle=False)
+    acc = int(acc.history['accuracy'][-1]*100)/100
+    model.reset_states()  # need for LSTM
+
+    return acc
+
+# take action to move
+def predict(model, observation):
+    # np_obs = np.reshape(observation, [1, 1, OBSERVATIONS_DIM])
+    np_obs = np.array([observation])
+
+    action = np.argmax(model.predict(np_obs, batch_size=1))
+    return action
+
+# take outputs for training
+def get_q(model, observation):
+    # np_obs = np.reshape(observation, [1, 1, OBSERVATIONS_DIM])
+    np_obs = np.array([observation])
+    return model.predict(np_obs, batch_size=1)

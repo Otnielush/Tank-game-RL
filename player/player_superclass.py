@@ -9,6 +9,9 @@ class player_obj():
         self.name = name
         self.connection = 0
         self.env = 0
+        self.data = 0
+        self.reward = 0
+        self.info = 0
         self.tank_type = ''
 
         if difficulty == 1:
@@ -34,12 +37,12 @@ class player_obj():
         self.tank_type = type
 
     def move(self):
-        self.env, self.data, self.info = self.connection.get_env_from_server(self.id)
-        action = self.action_function()
+        self.env, self.data, self.reward, self.info = self.connection.get_env_from_server(self.id_game)
+        action = self.action_function(self)
 
         # TODO stopped here
-        # TODO change id for tanks. player dont know ID_START - write it in broadcasting
         self.connection.send_action(self.id_game, action)
+        # TODO change id for tanks. player dont know ID_START - write it in broadcasting
 
     # game round done
     def done(self):

@@ -16,7 +16,6 @@ def step(self):
     done = False
     win_draw = False
     # MOVES_PER_FRAME mechanics. second part of function is at the end of function
-    # TODO destroied tank
     if self.frame_step <= 0:
         self.data = self.connection.get_actions()
 
@@ -214,14 +213,20 @@ def step(self):
 
 
     # MOVES_PER_FRAME mechanics. first part of function is at the start of function
-    if self.frame_step <= 0 or done:
-        self.steps += 1
-        self.send_data_to_players(info)
-        self.frame_step = MOVES_PER_FRAME - 1
-    # if MOVES_PER_FRAME = 1, frame_step always will be 0
-    else:
-        if MOVES_PER_FRAME > 1:
+    if MOVES_PER_FRAME > 1 or done:
+        if self.frame_step == 1 or done:
+            self.send_data_to_players(info)
+            self.steps += 1
             self.frame_step -= 1
+        elif self.frame_step <= 0:
+            self.frame_step = MOVES_PER_FRAME - 1
+        else:
+            self.frame_step -= 1
+    else:
+        self.send_data_to_players(info)
+        self.steps += 1
+
+
     print('time:', round(timer), end='')
     return done
 
