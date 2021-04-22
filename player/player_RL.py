@@ -1,8 +1,11 @@
 from numpy import argmax
-# from .player_superclass import player_obj
-class player_obj():
-    def __init__(self, name):
-        pass
+
+if __name__ == '__main__':
+    class player_obj():
+        def __init__(self, name):
+            pass
+else:
+    from .player_superclass import player_obj
 
 from collections import deque
 import numpy as np
@@ -60,17 +63,18 @@ class player_RL(player_obj):
 
         # taking actions from model
         # From tank obj:  accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
-        action, action_ind_for_save = self.action_function(self)
+        action, action_ind_for_save = self.action_function_RL()
         self.old_action = copy(action_ind_for_save)
 
         self.connection.send_action(self.id_game, action)
 
 
 
-    def action_function(self):
+    def action_function_RL(self):
         # TODO add random
         # array (31, 1)
-        preds = self.model.predict([self.env, self.data])[0]
+        # TODO stopped here. Preparation for input map env
+        preds = self.model.predict([self.env, self.data], batch_size=1)[0]
         # decoding into [-1: 1] and Boolean
         return action_decoder(preds)
 
@@ -78,11 +82,11 @@ class player_RL(player_obj):
 # TODO how to train a multiple choices? And what args to save?
 def action_decoder(acts):
     args = [0 for _ in range(5)]
-    args[0] = np.argmax(acts[:9])
-    args[1] = np.argmax(acts[9:18])
-    args[2] = np.argmax(acts[18:27])
-    args[3] = np.argmax(acts[27:29])
-    args[4] = np.argmax(acts[29:])
+    args[0] = argmax(acts[:9])
+    args[1] = argmax(acts[9:18])
+    args[2] = argmax(acts[18:27])
+    args[3] = argmax(acts[27:29])
+    args[4] = argmax(acts[29:])
     return [Action_dict[args[0]], Action_dict[args[1]], Action_dict[args[2]], args[3], args[4]], args
 
 
@@ -112,8 +116,8 @@ class ReplayBuffer():
 
 
 # function with NN model
-def action_function(self):
-    pass
+# def action_function(self):
+#     pass
 
 # accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
 #1: -> (9) [-1.  , -0.75, -0.5 , -0.25,  0.  ,  0.25,  0.5 ,  0.75,  1.  ]
@@ -229,11 +233,15 @@ def get_q(model, observation):
     np_obs = np.array([observation])
     return model.predict(np_obs, batch_size=1)
 
+
+def test(acts):
+    return action_decoder(acts)
+
 if __name__ == '__main__':
     model = build_model()
     env = np.random.random((1, 15, 15, 4))
     data = np.random.random((1, 10))
     pred = model.predict([env, data])
     print(pred)
-    print(action_decoder(pred[0]))
+    print(test(pred[0]))
 
