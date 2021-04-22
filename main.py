@@ -18,7 +18,7 @@ team1 = [Player.player_AI('AI1')] #  , Player.player_AI("AI2")]
 team1[0].change_tank_type(t_type); team1[0].change_id(242)
 # team1[1].change_tank_type(t_type); team1[1].change_id(243)
 
-team2 = [Player.player_RL('AI3'), Player.player_AI('AI4'), Player.player_AI('AI5')]
+team2 = [Player.player_AI('AI3'), Player.player_AI('AI4'), Player.player_AI('AI5')]
 team2[0].change_tank_type(t_type); team2[0].change_id(244)
 team2[1].change_tank_type(t_type); team2[1].change_id(245)
 team2[2].change_tank_type(t_type); team2[2].change_id(246)
@@ -28,9 +28,10 @@ Game = gg.TankGame(MULTY_PIXEL)
 Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
 
 
-
+# FOR TEST
 # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
 Game.connection.send_action(101, [1, 1, 0.5, True, False])
+
 Game.connection.send_action(102, [0.1, 0.1, 0, False, False])
 Game.connection.send_action(103, [0.0, -1, 0, False, False])
 Game.connection.send_action(104, [0.1, 0.0, 0, False, False])
