@@ -1,4 +1,5 @@
 from numpy import argmax
+from copy import deepcopy
 
 if __name__ == '__main__':
     class player_obj():
@@ -12,15 +13,13 @@ import numpy as np
 from copy import copy
 
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, LSTM, Reshape, GRU, Concatenate
+from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate
 from tensorflow.keras.optimizers import Adam
 
-
 LEARNING_RATE = 0.001
-ALPHA = 0.39  #  renew outputs
-BATCH_SIZE=256
-TIME_STEP_MEMORY=3
+ALPHA = 0.39  # renew outputs
+BATCH_SIZE = 256
+TIME_STEP_MEMORY = 3
 
 NUM_EPOCHS = 20
 
@@ -32,6 +31,8 @@ MINIBATCH_SIZE = 1000
 
 RANDOM_ACTION_DECAY = 0.99
 INITIAL_RANDOM_ACTION = 1
+
+ENV_INPUT_2D_VIEW = (15, 15, 4)
 
 
 # Main RL player
@@ -63,32 +64,55 @@ class player_RL(player_obj):
 
         # taking actions from model
         # From tank obj:  accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
-        action, action_ind_for_save = self.action_function_RL()
-        self.old_action = copy(action_ind_for_save)
+        action, act_indexes = self.action_function_RL()
+        self.old_action = copy(act_indexes)
 
         self.connection.send_action(self.id_game, action)
-
-
 
     def action_function_RL(self):
         # TODO add random
         # array (31, 1)
         # TODO stopped here. Preparation for input map env
-        preds = self.model.predict([self.env, self.data], batch_size=1)[0]
+
+        predictions = self.model.predict(
+            [env_prepare_2d(self.env, (self.tank_ingame.X, self.tank_ingame.Y), self.start_side), self.data],
+            batch_size=1)[0]
         # decoding into [-1: 1] and Boolean
-        return action_decoder(preds)
+        return action_decoder(predictions)
 
 
 # TODO how to train a multiple choices? And what args to save?
 def action_decoder(acts):
     args = [0 for _ in range(5)]
     args[0] = argmax(acts[:9])
-    args[1] = argmax(acts[9:18])
-    args[2] = argmax(acts[18:27])
-    args[3] = argmax(acts[27:29])
-    args[4] = argmax(acts[29:])
-    return [Action_dict[args[0]], Action_dict[args[1]], Action_dict[args[2]], args[3], args[4]], args
+    args[1] = argmax(acts[9:18]) + 9
+    args[2] = argmax(acts[18:27]) + 18
+    args[3] = argmax(acts[27:29]) + 27
+    args[4] = argmax(acts[29:]) + 29
+    return [Action_dict[args[0]], Action_dict[args[1]-9], Action_dict[args[2]-18], args[3]-27, args[4]-29], args
 
+
+# input: env_map, position of tank (x,y), starting side of map
+def env_prepare_2d(env, pos_xy, side: str = 'up'):
+    view = np.zeros((1,)+ENV_INPUT_2D_VIEW)
+
+    start_x = max(0, 7 - int(pos_xy[0]))  # 7 - center of view ENV_INPUT_2D_VIEW = (15, 15, 4)
+    start_y = max(0, 7 - int(pos_xy[1]))
+    start_x_e = max(0, int(pos_xy[0]) - 7)
+    start_y_e = max(0, int(pos_xy[1]) - 7)
+
+    range_x = min(env.shape[0] - start_x_e, 15 - start_x)  # 15 shape of view
+    range_y = min(env.shape[1] - start_y_e, 15 - start_y)
+
+    view[0, start_x: start_x + range_x, start_y: start_y + range_y, :] = \
+        deepcopy(env[start_x_e: start_x_e + range_x, start_y_e: start_y_e + range_y, :])
+
+    if side == 'up':
+        pass
+    elif side == 'down':
+        pass
+
+    return view
 
 
 # TODO each player have his folder with data
@@ -120,24 +144,25 @@ class ReplayBuffer():
 #     pass
 
 # accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
-#1: -> (9) [-1.  , -0.75, -0.5 , -0.25,  0.  ,  0.25,  0.5 ,  0.75,  1.  ]
-#2: -> (9) ...
-#3: -> (9) ...
-#4: -> (2) [0, 1]
-#5: -> (2) ...
+# 1: -> (9) [-1.  , -0.75, -0.5 , -0.25,  0.  ,  0.25,  0.5 ,  0.75,  1.  ]
+# 2: -> (9) ...
+# 3: -> (9) ...
+# 4: -> (2) [0, 1]
+# 5: -> (2) ...
 ACTIONS_DIM = 31
-Action_dict = {x:np.linspace(-1, 1, 9)[x] for x in range(9)}
+Action_dict = {x: np.linspace(-1, 1, 9)[x] for x in range(9)}
 
 # data:  (10, 1) # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
 # ammunition; round time left in %
 DATA_DIM = 10
 
-def build_model():
-    # map: (width, height, 4)
-    # data:  (10, 1) # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
-              # ammunition; round time left in %
 
-    input1 = tf.keras.layers.Input(shape=(15, 15, 4), name='map_env')
+def build_model():
+    # map: (15, 15, 4)
+    # data:  (10, 1) # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
+    # ammunition; round time left in %
+
+    input1 = tf.keras.layers.Input(shape=ENV_INPUT_2D_VIEW, name='map_env')
     input2 = tf.keras.layers.Input(shape=(DATA_DIM,), name='data')
     conv1 = Convolution2D(6, (3, 3), strides=(1), activation='relu')(input1)
     conv1 = MaxPool2D((2, 2))(conv1)
@@ -214,10 +239,11 @@ def train(model, observations, targets):
 
     model.reset_states()  # need for LSTM
     acc = model.fit(np_obs, np_targets, epochs=NUM_EPOCHS, verbose=0, batch_size=BATCH_SIZE, shuffle=False)
-    acc = int(acc.history['accuracy'][-1]*100)/100
+    acc = int(acc.history['accuracy'][-1] * 100) / 100
     model.reset_states()  # need for LSTM
 
     return acc
+
 
 # take action to move
 def predict(model, observation):
@@ -227,6 +253,7 @@ def predict(model, observation):
     action = np.argmax(model.predict(np_obs, batch_size=1))
     return action
 
+
 # take outputs for training
 def get_q(model, observation):
     # np_obs = np.reshape(observation, [1, 1, OBSERVATIONS_DIM])
@@ -234,14 +261,21 @@ def get_q(model, observation):
     return model.predict(np_obs, batch_size=1)
 
 
-def test(acts):
-    return action_decoder(acts)
+class Tankk():
+    def __init__(self, x, y):
+        self.X = x
+        self.Y = y
+
 
 if __name__ == '__main__':
-    model = build_model()
-    env = np.random.random((1, 15, 15, 4))
-    data = np.random.random((1, 10))
-    pred = model.predict([env, data])
-    print(pred)
-    print(test(pred[0]))
+    # model = build_model()
+    pl = player_RL('ttt')
+    pl.env = np.random.random((12, 10, 4))
+    pl.tank_ingame = Tankk(2, 4)
+    pl.start_side = 'up'
+    pl.data = np.random.random((1,10))
+    act, preds = pl.action_function_RL()
+
+    print(preds)
+    print(act)
 

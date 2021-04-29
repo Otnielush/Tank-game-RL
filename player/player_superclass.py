@@ -13,6 +13,8 @@ class player_obj():
         self.reward = 0
         self.info = 0
         self.tank_type = ''
+        self.tank_ingame = ''  # tank object in game
+        self.start_side = ''  # starting side of map for RL
 
         if difficulty == 1:
             self.action_function = lambda x: 1, 0.1, -0.1, False, False   # TODO: write action function for AI

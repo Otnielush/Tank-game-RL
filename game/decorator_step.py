@@ -38,7 +38,7 @@ def step(self):
             self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
             # capture points
-            if self.map[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 2].any() == 1:
+            if self.map_env[self.team1[i].coords_xy[0]//self.PIX_CELL, self.team1[i].coords_xy[1]//self.PIX_CELL, 2].any() == 1:
                 self.team1[i].capture_points += 1
                 team1_capture_points += self.team1[i].capture_points
             elif self.team1[i].capture_points > 0:
@@ -60,7 +60,7 @@ def step(self):
             self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
             # capture points
-            if self.map[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 1].any() == 1:
+            if self.map_env[self.team2[i].coords_xy[0]//self.PIX_CELL, self.team2[i].coords_xy[1]//self.PIX_CELL, 1].any() == 1:
                 self.team2[i].capture_points += 1
                 team2_capture_points += self.team2[i].capture_points
             elif self.team2[i].capture_points > 0:
@@ -150,8 +150,8 @@ def step(self):
                 # if its wall and bullet type can destroy
                 if self.bullets[i].damaged_target_id == self.map_obs_d['wall'] and self.bullets[i].destroy:
                     # erase wall from map
-                    self.map[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
-                                int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
+                    # self.map[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
+                    #             int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
                     # map environment
                     self.map_env[int(self.bullets[i].X), int(self.bullets[i].Y), 0] = 0
                     # map collision
@@ -161,12 +161,12 @@ def step(self):
                         background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
 
             # erasing bullet from maps
-            self.map[old_coords[0], old_coords[1], 3] = 0
+            # self.map[old_coords[0], old_coords[1], 3] = 0
             self.map_env[round(old_xy[0]), round(old_xy[1]), 3] = 0
         else:
             if self.bullets[i].done:
                 # erasing from maps
-                self.map[old_coords[0], old_coords[1], 3] = 0
+                # self.map[old_coords[0], old_coords[1], 3] = 0
                 self.map_env[round(old_xy[0]), round(old_xy[1]), 3] = 0
                 self.bullets_in_act.remove(self.bullets[i].id_game - 200)
             else:
@@ -236,8 +236,8 @@ setattr(TankGame, 'step', step)
 
 def move_obj_on_maps(self, obj, layer, old_xy, old_coords):
     self.map_coll[obj.coords_xy[0], obj.coords_xy[1], 1 if layer < 3 else 2] = obj.id_game
-    self.map[old_coords[0], old_coords[1], layer] = 0
-    self.map[obj.coords_xy[0], obj.coords_xy[1], layer] = self.tank_type_d[obj.type] if layer < 3 else 1
+    # self.map[old_coords[0], old_coords[1], layer] = 0
+    # self.map[obj.coords_xy[0], obj.coords_xy[1], layer] = self.tank_type_d[obj.type] if layer < 3 else 1
     self.map_env[round(old_xy[0]), round(old_xy[1]), layer] = 0
     self.map_env[round(obj.X): round(obj.X+max(obj.width, 1)),
                     round(obj.Y): round(obj.Y + max(obj.height, 1)), layer] = self.tank_type_d[obj.type] if layer < 3 else 1

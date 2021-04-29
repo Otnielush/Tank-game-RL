@@ -51,3 +51,16 @@
 # https://www.mlq.ai/deep-reinforcement-learning-q-learning/
 # https://rubikscode.net/2019/07/08/deep-q-learning-with-python-and-tensorflow-2-0/
 
+# OPENAI DOTA2: - REWARD
+# Exploration is also helped by a good reward. Our reward consists mostly of metrics humans track to decide how they’re
+# doing in the game: net worth, kills, deaths, assists, last hits, and the like. We postprocess each agent’s reward by
+# subtracting the other team’s average reward to prevent the agents from finding positive-sum situations.
+
+# Coordination - TEAMPLAY
+# OpenAI Five does not contain an explicit communication channel between the heroes’ neural networks.
+# Teamwork is controlled by a hyperparameter we dubbed “team spirit”. Team spirit ranges from 0 to 1,
+# putting a weight on how much each of OpenAI Five’s heroes should care about its individual reward function versus
+# the average of the team’s reward functions. We anneal its value from 0 to 1 over training.
+
+# - RL SUBTASKS HIGH LEVEL - https://openai.com/blog/learning-a-hierarchy/
+# https://github.com/openai/mlsh

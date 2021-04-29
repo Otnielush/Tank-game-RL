@@ -69,12 +69,16 @@ class TankGame():
         for i in range(len(team1_payers)):
             self.team1.append(Tank(id_tank, team1_payers[i], 1, 0, 0, self.PIX_CELL))
             team1_payers[i].change_id(id_game=id_tank)
+            team1_payers[i].start_side = 'up'
+            team1_payers[i].tank_ingame = self.team1[-1]
             self.team1[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team1[-1]
             id_tank += 1
         for i in range(len(team2_payers)):
             self.team2.append(Tank(id_tank, team2_payers[i], 2, 0, 0, self.PIX_CELL))
             team2_payers[i].change_id(id_game=id_tank)
+            team2_payers[i].start_side = 'down'
+            team2_payers[i].tank_ingame = self.team2[-1]
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team2[-1]
             id_tank += 1
@@ -154,6 +158,7 @@ class TankGame():
                 start_x_m = max(int(self.team2[i].sight_range - self.team2[i].X), 0)
                 start_y_m = max(int(self.team2[i].sight_range - self.team2[i].Y), 0)
 
+                # TODO rebuild to ranges like in player_RL
                 end_x = min(int(self.team2[i].X + self.team2[i].sight_range + 1), self.width)
                 end_y = min(int(self.team2[i].Y + self.team2[i].sight_range + 1), self.height)
                 end_x_m = min(self.team2[i].sight_range * 2 + 1 - start_x_m, self.team2[i].sight_range * 2 + 1)
@@ -176,7 +181,7 @@ class TankGame():
             return map_env
 
 
-
+    # not needed !!!!!!
     def build_collision_map(self):
         self.map_coll[:, :, 0] = np.rint(self.map[:, :, 0] - 0.35) * self.map[:, :, 0]  # 1 - Wall, 1 - Rock, all other - 0
         # base team 1
@@ -195,7 +200,7 @@ class TankGame():
         # 3 - Bullets
         # LAST -  fog of war (not sending)
         M = self.PIX_CELL
-        self.map = np.zeros((self.width*M, self.height*M, 5))  # map for game/video
+        # self.map = np.zeros((self.width*M, self.height*M, 5))  # map for game/video
         self.map_env = np.zeros((self.width, self.height, 4))  # map for input AI players  Layers: 0 - obstacles, 1 - friend team, 2 - enemy`s team, 3 - bullets (because of rockets
         self.map_coll = np.zeros((self.width*M, self.height*M, 3))  # layers: 0-obstacles; 1-moving objects. 2- bullets| All with id numbers. Obstacles ids from 1. Tanks ids from 101++
 
@@ -204,24 +209,26 @@ class TankGame():
         for y in np.arange(3, self.height - 3, 1):
             for x in np.arange(1, self.width-1, 1):
                 obstacle = self.map_obs_d[random.choice(self.map_obs)]
-                self.map[x*M:(x+1)*M, y*M:(y+1)*M, 0] = obstacle
+                # self.map[x*M:(x+1)*M, y*M:(y+1)*M, 0] = obstacle
                 self.map_env[x, y, 0] = obstacle
+                if obstacle > 0.85:
+                    self.map_coll[x*M:(x+1)*M, y*M:(y+1)*M, 0] = obstacle
         # Border of map
-        self.map[:, 0:M, 0] = 1
-        self.map[ :, (self.height-1) * M:(self.height)* M,0] = 1
-        self.map[0:M, :, 0] = 1
-        self.map[(self.width-1)*M:self.width*M, :, 0] = 1
+        self.map_coll[:, 0:M, 0] = 1
+        self.map_coll[ :, (self.height-1) * M:(self.height)* M,0] = 1
+        self.map_coll[0:M, :, 0] = 1
+        self.map_coll[(self.width-1)*M:self.width*M, :, 0] = 1
         self.map_env[:, [0, -1], 0] = 1
         self.map_env[[0, -1], :, 0] = 1
 
         # base for team (occupy for win) 2 cells
         base_place = int((self.width-1) / 2)
-        self.map[base_place*M:(base_place+2)*M, 1*M: 2*M, 1] = 1
-        self.map[base_place*M:(base_place+2)*M, (self.height-2)*M:(self.height-1)*M, 2] = 1
+        # self.map[base_place*M:(base_place+2)*M, 1*M: 2*M, 1] = 1
+        # self.map[base_place*M:(base_place+2)*M, (self.height-2)*M:(self.height-1)*M, 2] = 1
         self.map_env[base_place:(base_place+2), 1, 1] = 1
         self.map_env[base_place:(base_place+2), (self.height-2), 2] = 1
 
-        self.build_collision_map()
+        # self.build_collision_map()  # dont need more
 
         # Adding tanks
         # TODO Now only simple tank types. Change to different.
@@ -240,8 +247,9 @@ class TankGame():
             self.team1[i].Y = y_pos
             self.team1[i].X = tank_place
             self.team1[i].calc_tank_coordinates(tank_place*M, y_pos*M)
+            self.team1[i].start_side = 'up'
 
-            self.map[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.tank_type_d[self.team1[i].type]
+            # self.map[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.tank_type_d[self.team1[i].type]
             self.map_env[tank_place: tank_place+max(int(self.team1[i].width), 1),
                             y_pos:y_pos+ max(1, int(self.team2[i].height)), 1] = self.tank_type_d[self.team1[i].type]
             self.map_coll[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.team1[i].id_game
@@ -255,8 +263,9 @@ class TankGame():
             self.team2[i].Y = y_pos
             self.team2[i].X = tank_place
             self.team2[i].calc_tank_coordinates(tank_place * M, y_pos*M)
+            self.team2[i].start_side = 'down'
 
-            self.map[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 2] = self.tank_type_d[self.team2[i].type]
+            # self.map[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 2] = self.tank_type_d[self.team2[i].type]
             self.map_env[tank_place: tank_place+max(int(self.team2[i].width), 1),
                             y_pos:y_pos + max(1, int(self.team2[i].height)), 2] = self.tank_type_d[self.team2[i].type]
             self.map_coll[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 1] = self.team2[i].id_game

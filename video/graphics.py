@@ -143,10 +143,10 @@ def play_video(game, VIDEO):
     turn = 0
     tower = 0
     shot = False
-    coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.connection.env_from_server[0][:, :, :3] * 255), 0)
+    # coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.connection.env_from_server[0][:, :, :3] * 255), 0)
+    # coll_map = pygame.transform.scale(coll_map, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
+    coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_coll[:, :, :3] * 255), 0)
     coll_map = pygame.transform.scale(coll_map, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
-    # coll_map2 = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_coll[:, :, :3] * 255), 0)
-    # coll_map2 = pygame.transform.scale(coll_map2, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
 
     # features_nn = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_env[:, :, :3] * 255), 0)
     # features_nn = pygame.transform.scale(features_nn, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
