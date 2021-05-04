@@ -72,8 +72,9 @@ def step(self):
                 self.id_bul += 1  # id of bullets
                 self.reward(idd, self.score_shot, 'shot')
 
-    #
-    print('Capture:', team1_capture_points, team2_capture_points, end=' |')
+    # print capturing points TODO add to input to NN
+    if team1_capture_points > 0 or team2_capture_points > 0:
+        print('Capturing:', team1_capture_points, team2_capture_points, end=' |')
 
     # Move bullets
     for i in self.bullets_in_act:
@@ -114,12 +115,22 @@ def step(self):
                                  round(self.id_tanks[self.bullets[i].damaged_target_id].Y), tank_dmg_t] = 0
                     self.map_coll[self.id_tanks[self.bullets[i].damaged_target_id].coords_xy[0],
                                   self.id_tanks[self.bullets[i].damaged_target_id].coords_xy[1], 1] = 0
+                    # video
                     if self.VIDEO[0]:
                         tank_body = rotate(scale(tank_destroyed, (round(self.id_tanks[self.bullets[i].damaged_target_id].width*MULTY_PIXEL_V),
                                                                   round(self.id_tanks[self.bullets[i].damaged_target_id].height*MULTY_PIXEL_V))),
                                            self.id_tanks[self.bullets[i].damaged_target_id].direction_tank * 360 + 180)
                         background.blit(tank_body, (self.id_tanks[self.bullets[i].damaged_target_id].X * MULTY_PIXEL_V,
                                                     self.id_tanks[self.bullets[i].damaged_target_id].Y * MULTY_PIXEL_V))
+                    # stats
+                    self.id_tanks[self.bullets[i].damaged_target_id].player.deaths += 1
+                    self.bullets[i].parent.player.tanks_killed += 1
+                    # rewards
+                    self.reward(self.bullets[i].parent.id_game - self.ID_START,
+                                self.score_kill, 'killed id: {}'.format(str(int(self.bullets[i].damaged_target_id) - self.ID_START)))
+                    self.reward(int(self.bullets[i].damaged_target_id) - self.ID_START,
+                                self.score_death, 'killed by id: {}'.format(str(self.bullets[i].parent.id_game - self.ID_START)))
+
 
                 # friendly fire check
                 # if not FF
@@ -142,6 +153,17 @@ def step(self):
                                 self.score_take_hit + self.score_take_dmg * dmg_dealed,
                                 'took friendly dmg from id: {} dmg: {}'.format(
                                     str(self.bullets[i].parent.id_game - self.ID_START), dmg_dealed))
+
+                # Remove capture points from damaged tank
+                if self.id_tanks[self.bullets[i].damaged_target_id].capture_points > 0:
+                    # reward
+                    self.reward(self.bullets[i].parent.id_game - self.ID_START,
+                                self.score_capture, 'stopped capturing id: {} points: {}'.format(
+                                    str(int(self.bullets[i].damaged_target_id) - self.ID_START),
+                            self.id_tanks[self.bullets[i].damaged_target_id].capture_points))
+                    self.id_tanks[self.bullets[i].damaged_target_id].capture_points = 0
+
+
 
             # obstacles hit
             # if its wall -> broke or calc hp
@@ -186,6 +208,10 @@ def step(self):
             for t in self.team2:
                 self.reward(t.id_game - self.ID_START, t.capture_points * self.score_capture, 'for capture')
                 self.reward(t.id_game - self.ID_START, self.score_win, 'win')
+                if team2_capture_points > Capture_points_win and t.capture_points > 0:
+                   t.player.bases_captured += 1
+                else:
+                    t.player.wins += 1
             for t in self.team1:
                 self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
     # Team 1 WIN
@@ -196,6 +222,10 @@ def step(self):
         for t in self.team1:
             self.reward(t.id_game - self.ID_START, t.capture_points*self.score_capture, 'for capture')
             self.reward(t.id_game - self.ID_START, self.score_win, 'win')
+            if team1_capture_points > Capture_points_win and t.capture_points > 0:
+                t.player.bases_captured += 1
+            else:
+                t.player.wins += 1
         for t in self.team2:
             self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
 
@@ -207,9 +237,11 @@ def step(self):
         for t in self.team1:
             self.reward(t.id_game - self.ID_START, t.capture_points*self.score_capture, 'for capture')
             self.reward(t.id_game - self.ID_START, self.score_win + self.score_lose, 'draw')
+            t.player.draws += 1
         for t in self.team2:
             self.reward(t.id_game - self.ID_START, t.capture_points * self.score_capture, 'for capture')
             self.reward(t.id_game - self.ID_START, self.score_win + self.score_lose, 'draw')
+            t.player.draws += 1
 
 
     # MOVES_PER_FRAME mechanics. first part of function is at the start of function
@@ -227,7 +259,7 @@ def step(self):
         self.steps += 1
 
 
-    print('time:', round(timer), end='')
+    # print('time:', round(timer), end='')
     return done
 
 setattr(TankGame, 'step', step)

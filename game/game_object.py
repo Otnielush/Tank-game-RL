@@ -71,6 +71,7 @@ class TankGame():
             team1_payers[i].change_id(id_game=id_tank)
             team1_payers[i].start_side = 'up'
             team1_payers[i].tank_ingame = self.team1[-1]
+            team1_payers[i].games_played += 1
             self.team1[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team1[-1]
             id_tank += 1
@@ -79,6 +80,7 @@ class TankGame():
             team2_payers[i].change_id(id_game=id_tank)
             team2_payers[i].start_side = 'down'
             team2_payers[i].tank_ingame = self.team2[-1]
+            team2_payers[i].games_played += 1
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team2[-1]
             id_tank += 1

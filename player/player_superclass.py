@@ -15,6 +15,12 @@ class player_obj():
         self.tank_type = ''
         self.tank_ingame = ''  # tank object in game
         self.start_side = ''  # starting side of map for RL
+        self.games_played = 0
+        self.wins = 0
+        self.tanks_killed = 0
+        self.deaths = 0
+        self.bases_captured = 0
+        self.draws = 0
 
         if difficulty == 1:
             self.action_function = lambda x: 1, 0.1, -0.1, False, False   # TODO: write action function for AI

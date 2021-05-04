@@ -1,5 +1,6 @@
 from numpy import argmax
 from copy import deepcopy
+from random import randint
 
 if __name__ == '__main__':
     class player_obj():
@@ -45,74 +46,94 @@ class player_RL(player_obj):
         self.replay_buffer = ReplayBuffer(REPLAY_MEMORY_SIZE)
         self.model = build_model()
         self.old_observation = (0, 0, 0)
+        self.env_2d_view = 0
         self.old_action = 0
+        self.random_move = 90  # percent of random choiced move
+        self.games_to_rnd_decr = 10
+        self.games_to_derc = self.games_to_rnd_decr
 
     def done(self):
         super(player_RL, self).done()
-        print(self.name, 'done')
+        if self.random_move > 10:
+            self.games_to_derc -= 1
+        if self.games_to_derc <= 0:
+            self.games_to_derc = self.games_to_rnd_decr
+            self.random_move -= 5
+            print(self.name, 'random move:', self.random_move)
+        print(self.name, 'done. Training')
+        # training
+
+
 
     # TODO specify for RL
     def __str__(self):
         return self.id_game
 
     def move(self):
-        self.old_observation = (self.env, self.data, self.reward)
+        self.old_observation = (deepcopy(self.env_2d_view), deepcopy(self.data))
         self.env, self.data, self.reward, self.info = self.connection.get_env_from_server(self.id_game)
-        # saving data for training
-        self.replay_buffer.add(self.old_observation[0], self.old_observation[1], self.old_action,
-                               self.reward, self.env, self.data)
 
         # taking actions from model
         # From tank obj:  accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
-        action, act_indexes = self.action_function_RL()
-        self.old_action = copy(act_indexes)
-
+        action = self.action_function_RL()
+        # saving data for training
+        self.replay_buffer.add(self.old_observation, self.old_action, self.reward, (self.env_2d_view, self.data))
+        self.old_action = copy(action)
         self.connection.send_action(self.id_game, action)
 
-    def action_function_RL(self):
-        # TODO add random
-        # array (31, 1)
-        # TODO stopped here. Preparation for input map env
 
-        predictions = self.model.predict(
-            [env_prepare_2d(self.env, (self.tank_ingame.X, self.tank_ingame.Y), self.start_side), self.data],
-            batch_size=1)[0]
+    def action_function_RL(self):
+        # array (31, 1)
+        # TODO stopped here. add random
+        if randint(0, 100) < self.random_move:
+            return [Action_dict[randint(0, 8)], Action_dict[randint(0, 8)], Action_dict[randint(0, 8)], randint(0, 1), randint(0, 1)]
+        # preparing 2d map view
+        self.env_prepare_2d()
+        predictions = self.model.predict([self.env_2d_view, self.data], batch_size=1)[0]
         # decoding into [-1: 1] and Boolean
         return action_decoder(predictions)
+
+
+    # need: env_map, position of tank (x,y), starting side of map
+    def env_prepare_2d(self):
+        view = np.zeros((1,) + ENV_INPUT_2D_VIEW)
+
+        start_x = max(0, 7 - int(self.tank_ingame.X))  # 7 - center of view ENV_INPUT_2D_VIEW = (15, 15, 4)
+        start_y = max(0, 7 - int(self.tank_ingame.Y))
+        start_x_e = max(0, int(self.tank_ingame.X) - ENV_INPUT_2D_VIEW[0] // 2)
+        start_y_e = max(0, int(self.tank_ingame.Y) - ENV_INPUT_2D_VIEW[1] // 2)
+
+        range_x = min(self.env.shape[0] - start_x_e, 15 - start_x)  # 15 shape of view
+        range_y = min(self.env.shape[1] - start_y_e, 15 - start_y)
+
+        view[0, start_x: start_x + range_x, start_y: start_y + range_y, :] = \
+            deepcopy(self.env[start_x_e: start_x_e + range_x, start_y_e: start_y_e + range_y, :])
+
+        # rotation for 2d view
+        if self.start_side == 'up':
+            pass
+        elif self.start_side == 'down':
+            view = np.rot90(view, 2)
+        elif self.start_side == 'right':
+            view = np.rot90(view)
+        else:
+            view = np.rot90(view, 3)
+
+        self.env_2d_view = view
 
 
 # TODO how to train a multiple choices? And what args to save?
 def action_decoder(acts):
     args = [0 for _ in range(5)]
     args[0] = argmax(acts[:9])
-    args[1] = argmax(acts[9:18]) + 9
-    args[2] = argmax(acts[18:27]) + 18
-    args[3] = argmax(acts[27:29]) + 27
-    args[4] = argmax(acts[29:]) + 29
-    return [Action_dict[args[0]], Action_dict[args[1]-9], Action_dict[args[2]-18], args[3]-27, args[4]-29], args
+    args[1] = argmax(acts[9:18])
+    args[2] = argmax(acts[18:27])
+    args[3] = argmax(acts[27:29])
+    args[4] = argmax(acts[29:])
+    return [Action_dict[args[0]], Action_dict[args[1]], Action_dict[args[2]], args[3], args[4]]
 
 
-# input: env_map, position of tank (x,y), starting side of map
-def env_prepare_2d(env, pos_xy, side: str = 'up'):
-    view = np.zeros((1,)+ENV_INPUT_2D_VIEW)
 
-    start_x = max(0, 7 - int(pos_xy[0]))  # 7 - center of view ENV_INPUT_2D_VIEW = (15, 15, 4)
-    start_y = max(0, 7 - int(pos_xy[1]))
-    start_x_e = max(0, int(pos_xy[0]) - 7)
-    start_y_e = max(0, int(pos_xy[1]) - 7)
-
-    range_x = min(env.shape[0] - start_x_e, 15 - start_x)  # 15 shape of view
-    range_y = min(env.shape[1] - start_y_e, 15 - start_y)
-
-    view[0, start_x: start_x + range_x, start_y: start_y + range_y, :] = \
-        deepcopy(env[start_x_e: start_x_e + range_x, start_y_e: start_y_e + range_y, :])
-
-    if side == 'up':
-        pass
-    elif side == 'down':
-        pass
-
-    return view
 
 
 # TODO each player have his folder with data
@@ -125,10 +146,10 @@ class ReplayBuffer():
         self.buffer = deque()
 
     # env + data = observation
-    def add(self, env, data, action, reward, env_new, data_new):
+    def add(self, observation, action, reward, observation_new):
         if len(self.buffer) > self.max_size:
             self.buffer.popleft()
-        self.buffer.append((env, data, action, reward, env_new, data_new))
+        self.buffer.append((observation, action, reward, observation_new))
 
     # def sample(self, count):
     #     # taking a random part of buffer
@@ -189,16 +210,18 @@ def build_model():
     # print(model.summary())
     return model
 
-
+# 1. taking predictions from old observation
+# 2. adding reward from next observation
+# 3. training
 # calculating rewards for train
 def update_action(action_model, sample_transitions):
-    # random.shuffle(sample_transitions)
     batch_observations = []
     batch_targets = []
 
     for sample_transition in sample_transitions:
         old_observation, action, reward, observation = sample_transition
 
+        # TODO stopped here. Training
         targets = get_q(action_model, old_observation)[0]
         next_step = 0
         if observation is not None:
@@ -256,9 +279,7 @@ def predict(model, observation):
 
 # take outputs for training
 def get_q(model, observation):
-    # np_obs = np.reshape(observation, [1, 1, OBSERVATIONS_DIM])
-    np_obs = np.array([observation])
-    return model.predict(np_obs, batch_size=1)
+    return model.predict(observation, batch_size=1)
 
 
 class Tankk():
