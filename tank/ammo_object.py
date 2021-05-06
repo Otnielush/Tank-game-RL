@@ -1,5 +1,5 @@
 import numpy as np
-from copy import copy
+from copy import deepcopy
 from options.video import FRAME_RATE
 
 
@@ -7,7 +7,7 @@ ammo_types = ['normal', 'rocket', 'bomb', 'jet', 'laser', 'electricity', 'mine',
 # max_distance - deal 0 dmg, at start - 100%; destroy - can destroy obstacles; artillery_fly - fly over obstacles to target
 # explossion - makes area dmg; expl_range - explossion range
 ammo_features = ['speed', 'max_distance', 'destroy', 'artillery_fly', 'explossion', 'expl_range']  # distance - at start-max dmg, at end-0
-a_normal      = [   4,          11,          True,       False,             False,           0]
+a_normal      = [   4,          12,          True,       False,             False,           0]
 
 
 class Ammo():
@@ -56,7 +56,7 @@ class Ammo():
     def move(self, coll_map):
         # remove old coords from collision map
         coll_map[round(self.X*self.PIX_CELL), round(self.Y*self.PIX_CELL), 2] = 0
-        old_xy = copy(self.coords_xy)
+        old_xy = deepcopy(self.coords_xy)
         self.X += self.speed_x
         self.Y += self.speed_y
         self.coords_xy = np.rint(np.array([self.X, self.Y]) * self.PIX_CELL).astype(int)

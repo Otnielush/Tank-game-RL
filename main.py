@@ -6,11 +6,9 @@ import time
 from video import graphics
 
 
-
-VIDEO = [False]
+VIDEO = [True]
 ROUNDS = 10
-VIDEO_ROUNDS = [1, 10]
-
+VIDEO_ROUNDS = [200, 100]
 
 
 
@@ -45,7 +43,6 @@ graphics.video_build_map(Game)
 done = False
 while True:
 
-
     # stop game check TODO change to net connection so that the game and the players would be a different programs
     if done:
         print()
@@ -62,10 +59,11 @@ while True:
             VIDEO[0] = True
         else:
             VIDEO[0] = False
-        Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
-        print('\r_______ Round', game_round, '_______')
         time_start = time.time()
         frame = 1
+        Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
+        graphics.video_build_map(Game)
+        print('\r_______ Round', game_round, '_______')
 
     # players decisions to move
     elif Game.frame_step <= 0:
@@ -80,7 +78,7 @@ while True:
 
     print('\rFPS', round(frame/(time.time()-time_start), 1), end='')
 
-    # print('\rspeed:', round(Game.team1[0].speed, 3), 'FPS:', round(frame/(time.time()-time_start), 1),
+    # print('\rspeed:', round(Game.team1[0].speed, 3), 'FPS:', round(frame/(time.time()-time_passed), 1),
           # 'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |')
     # print('bullets fired:', len(Game.bullets), 'in fly:', len(Game.bullets_in_act))
 

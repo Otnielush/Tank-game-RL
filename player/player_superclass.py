@@ -1,4 +1,5 @@
-
+from os import path, mkdir
+import json
 
 
 # Steps: create object, change_tank_type, new game -> connected_new_game
@@ -15,6 +16,7 @@ class player_obj():
         self.tank_type = ''
         self.tank_ingame = ''  # tank object in game
         self.start_side = ''  # starting side of map for RL
+
         self.games_played = 0
         self.wins = 0
         self.tanks_killed = 0
@@ -56,3 +58,29 @@ class player_obj():
     # game round done
     def done(self):
         pass
+
+    def load_player(self):
+        folder = './/player//players data//'+self.name
+        if path.exists(folder):
+            with open(folder + '//config.json', 'r') as cfg:
+                config = json.load(cfg)
+
+            params2load = ['games_played', 'wins', 'tanks_killed', 'deaths', 'bases_captured', 'draws']
+            for key in params2load:
+                self.__dict__[key] = config[key]
+
+
+    def save_model(self):
+        folder = './/player//players data//' + self.name + '//'
+        if not path.exists(folder):
+            mkdir(path.dirname(folder))
+        data = dict()
+        params2load = ['games_played', 'wins', 'tanks_killed', 'deaths', 'bases_captured', 'draws']
+        for key in params2load:
+            data[key] = self.__dict__[key]
+
+        with open(folder + '//config.json', 'w') as cfg:
+            json.dump(data, cfg)
+
+
+

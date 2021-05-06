@@ -3,6 +3,7 @@ import random
 from copy import copy
 from tank.tank_object import tank_type, Tank
 from net.broadcasting import net_connection
+from options.video import FRAME_RATE
 import time
 
 # game object
@@ -23,7 +24,7 @@ class TankGame():
         self.connection = 0
         self.rewards = 0  # {id, [step, reward, comment]}  # new game generates
         self.steps = 0
-        self.time_round_len = 5*60  # seconds
+        self.time_round_len = 5*60 * FRAME_RATE  # frames
 
 
         # SCORES
@@ -92,14 +93,13 @@ class TankGame():
 
         self.map_generate()
         # Round timer
-        self.time_start = time.perf_counter()
+        self.time_passed = 0
         # sending ENV to network connection
         self.send_data_to_players({'game_start': True})
 
 
-
     def send_data_to_players(self, info):
-        timer = (self.time_round_len - (time.perf_counter() - self.time_start)) / self.time_round_len
+        timer = (self.time_round_len - self.time_passed) / self.time_round_len
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
             idd = self.team1[i].id_game - self.ID_START

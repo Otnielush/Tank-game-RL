@@ -1,6 +1,8 @@
 from numpy import argmax
 from copy import deepcopy, copy
 from random import randint
+from os import path, mkdir
+import json
 
 if __name__ == '__main__': # for test
     class player_obj():
@@ -22,13 +24,14 @@ ALPHA = 0.39  # renew outputs
 BATCH_SIZE = 256
 TIME_STEP_MEMORY = 3
 
-NUM_EPOCHS = 7
+NUM_EPOCHS = 20
 
 GAMMA = 0.96
-REPLAY_MEMORY_SIZE = 3000
+REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
 
-RANDOM_ACTION_DECAY = 0.99
-INITIAL_RANDOM_ACTION = 1
+RANDOM_ACTION_DECAY_FREQ = 10
+RANDOM_ACTION_DECAY = 5
+INITIAL_RANDOM_ACTION = 90
 
 ENV_INPUT_2D_VIEW = (15, 15, 4)
 # accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
@@ -54,13 +57,15 @@ class player_RL(player_obj):
         super(player_RL, self).__init__(name)
         # self.action_function = action_function
         self.replay_buffer = ReplayBuffer(REPLAY_MEMORY_SIZE)
-        self.model = 0
         self.old_observation = (0, 0, 0)
         self.env_2d_view = 0
         self.old_action = 0
-        self.random_move = 90  # percent of random choiced move
-        self.games_to_rnd_decr = 10
+        self.random_move = INITIAL_RANDOM_ACTION  # percent of random choiced move
+        self.games_to_rnd_decr = RANDOM_ACTION_DECAY_FREQ
         self.games_to_derc = self.games_to_rnd_decr
+        # self.model = 0
+        self.load_player()
+
 
     def done(self):
         super(player_RL, self).done()
@@ -68,16 +73,18 @@ class player_RL(player_obj):
             self.games_to_derc -= 1
         if self.games_to_derc <= 0:
             self.games_to_derc = self.games_to_rnd_decr
-            self.random_move -= 5
+            self.random_move -= RANDOM_ACTION_DECAY
             print(self.name, 'random move:', self.random_move)
         print(self.name, 'game done.', end='')
         # training
         sample_transitions = self.replay_buffer.get_buffer()
         acc = update_action_vect(self.model, sample_transitions, decoder=action_decoder)
         print(' accuracy:', acc)
+        self.replay_buffer.clear()
+        self.save_model()
 
 
-    # # TODO specify for RL
+    # TODO specify for RL
     # def __str__(self):
     #     super(player_RL, self).__str__()
 
@@ -137,10 +144,22 @@ class player_RL(player_obj):
         self.env_2d_view = view
 
 
-    # Load or build new model TODO Stopped here
-    def build_model(self):
-        # check folder for saves
+    def load_player(self):
+        super(player_RL, self).load_player()
         self.model = build_model()
+        # check folder for saves
+        folder = './/player//players data//'+self.name+'//model_2d'
+        if path.exists(folder+'.index'):
+            self.model.load_weights(folder)
+            print(self.name, 'model loaded')
+
+
+    # saving model weights to directory named by player name
+    def save_model(self):
+        super(player_RL, self).save_model()
+        folder = './/player//players data//' + self.name + '//model_2d'
+        self.model.save_weights(folder)
+
 
 
 # from outputs of NN we take 3 choises
@@ -174,8 +193,6 @@ def action_decoder_reward2(acts):
     return reward
 
 
-# TODO each player have his folder with data
-
 # save all actions and data into game object or may be each player will save it himself
 class ReplayBuffer():
 
@@ -199,6 +216,9 @@ class ReplayBuffer():
 
     def get_buffer(self):
         return deque(itertools.islice(self.buffer, 0, len(self.buffer)))
+
+    def clear(self):
+        self.buffer = deque()
 
 
 def build_model():
@@ -278,7 +298,6 @@ def update_action(action_model, sample_transitions, decoder=None):
 
 def update_action_vect(action_model, sample_transitions, decoder=None):
     buf_size = len(sample_transitions)-1
-
     ds_env_2d = np.zeros( (buf_size,) + ENV_INPUT_2D_VIEW )
     ds_data = np.zeros( (buf_size, DATA_DIM) )
     ds_actions = np.zeros( (buf_size, NUM_ACTIONS), dtype='int32')

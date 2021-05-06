@@ -91,8 +91,13 @@ tank_width = round(0.6 * MULTY_PIXEL_V)
 tank_height = 1 * MULTY_PIXEL_V
 # img_tank_base = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank.png')), (tank_width, tank_height))
 # img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank_tower.png')), (round(tower_width), round(tower_height)))
-img_tank_base = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
+img_tank_base_red = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
                                        (tank_width, tank_height))
+img_tank_base_red.fill((100, 0, 0, 1), special_flags=pygame.BLEND_ADD)
+img_tank_base_blue = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
+                                       (tank_width, tank_height))
+img_tank_base_blue.fill((0, 0, 100, 1), special_flags=pygame.BLEND_ADD)
+
 img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankTurret.png')),
                                         (round(tower_width), round(tower_height)))
 
@@ -100,12 +105,13 @@ tank_tower = pygame.Surface((round(tower_width * 2), round(tower_height * 2)))
 tank_tower.blit(img_tank_tower, (
 round(tower_width) - img_tank_tower.get_width() // 2, round(tower_height) - img_tank_tower.get_height() // 2))
 
-del (temp, temp2)
+del(temp, temp2)
 
 
 # for backgroud building
 def video_build_map(game):
     global background
+    background.fill((139, 69, 19))
     # drawing background from game map
     for x in range(WIDTH):
         for y in range(HEIGHT):
@@ -186,7 +192,7 @@ def play_video(game, VIDEO):
         if tank.hp <= 0:
             continue
         # TODO check by hp, if == 0 than show dead tank
-        tank_body = pygame.transform.rotate(img_tank_base, tank.direction_tank * 360)
+        tank_body = pygame.transform.rotate(img_tank_base_red, tank.direction_tank * 360)
         # tank_rect = tank_body.get_rect(center=((tank_width//2), (tank_height//2)))
         DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL_V, tank.Y * MULTY_PIXEL_V))
 
@@ -204,7 +210,7 @@ def play_video(game, VIDEO):
     for tank in game.team2:
         if tank.hp <= 0:
             continue
-        tank_body = pygame.transform.rotate(img_tank_base, tank.direction_tank * 360)
+        tank_body = pygame.transform.rotate(img_tank_base_blue, tank.direction_tank * 360)
         tank_rect = tank_body.get_rect(center=(tank_width // 2, tank_height // 2))
         DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL_V + tank_rect[0], tank.Y * MULTY_PIXEL_V + tank_rect[1]))
         tower = pygame.transform.rotate(img_tank_tower, (tank.direction_tank + tank.direction_tower) * 360)
@@ -218,4 +224,4 @@ def play_video(game, VIDEO):
                            3)
 
     pygame.display.update()
-    time.sleep(1 / (FRAME_RATE + 7))
+    time.sleep(1 / (FRAME_RATE + 15))

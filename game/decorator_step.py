@@ -19,8 +19,6 @@ def step(self):
     if self.frame_step <= 0:
         self.data = self.connection.get_actions()
 
-    # Timer
-    timer = time.perf_counter() - self.time_start
 
     # Win check
     team1_alive = 0
@@ -183,8 +181,8 @@ def step(self):
                         background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
 
             # erasing bullet from maps
-            # self.map[old_coords[0], old_coords[1], 3] = 0
-            self.map_env[round(old_xy[0]), round(old_xy[1]), 3] = 0
+            self.map_env[old_xy[0], old_xy[1], 3] = 0
+
         else:
             if self.bullets[i].done:
                 # erasing from maps
@@ -230,7 +228,7 @@ def step(self):
             self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
 
     # Draw: all dead or time gone
-    if win_draw or timer > self.time_round_len:
+    if win_draw or self.time_passed > self.time_round_len:
         info = {'game_done': True}
         done = True
         # rewards
@@ -260,6 +258,7 @@ def step(self):
 
 
     # print('time:', round(timer), end='')
+    self.time_passed += 1
     return done
 
 setattr(TankGame, 'step', step)
