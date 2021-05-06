@@ -7,9 +7,9 @@ from video import graphics
 
 
 
-VIDEO = [True]
-ROUNDS = 50
-VIDEO_ROUNDS = [30, 50]
+VIDEO = [False]
+ROUNDS = 10
+VIDEO_ROUNDS = [1, 10]
 
 
 
@@ -17,7 +17,7 @@ VIDEO_ROUNDS = [30, 50]
 
 t_type = 'simple'
 
-team1 = [Player.player_AI("RL1t1"), Player.player_RL('RL2t1')]
+team1 = [Player.player_RL("RL1t1"), Player.player_RL('RL2t1')]
 team1[0].change_tank_type(t_type); team1[0].change_id(242)
 team1[1].change_tank_type(t_type); team1[1].change_id(243)
 
@@ -30,18 +30,15 @@ team2[2].change_tank_type(t_type); team2[2].change_id(246)
 Game = gg.TankGame(MULTY_PIXEL)
 game_round = 1
 Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
+# Game.time_round_len = 2
 print('_______ Round 1 _______')
 
 # FOR TEST
 # accelerate - 0, turn_body - 1, turn_tower - 2, shot - 3, skill - 4
 # Game.connection.send_action(101, [1, 1, 0.5, True, False])
-# Game.connection.send_action(102, [0.1, 0.1, 0, False, False])
-# Game.connection.send_action(103, [0.0, -1, 0, False, False])
-# Game.connection.send_action(104, [0.1, 0.0, 0, False, False])
 
 time_start = time.time()
 frame = 1
-
 
 graphics.video_build_map(Game)
 
@@ -51,26 +48,29 @@ while True:
 
     # stop game check TODO change to net connection so that the game and the players would be a different programs
     if done:
+        print()
         # for training,
         for t in Game.id_tanks:
             Game.id_tanks[t].player.done()
 
-            # new Game game_round
-            game_round += 1
-            if game_round > ROUNDS:
-                break
-            if game_round in VIDEO_ROUNDS:
-                VIDEO[0] = True
-            else:
-                VIDEO[0] = False
-            Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
-            print('\r_______ Round', game_round, '_______')
+        # new Game game_round
+        game_round += 1
+        if game_round > ROUNDS:
+            print(Game.team1[0].player)
+            break
+        if game_round in VIDEO_ROUNDS:
+            VIDEO[0] = True
+        else:
+            VIDEO[0] = False
+        Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
+        print('\r_______ Round', game_round, '_______')
+        time_start = time.time()
+        frame = 1
 
     # players decisions to move
     elif Game.frame_step <= 0:
         for t in Game.id_tanks:
             Game.id_tanks[t].player.move()
-            pass
 
 
     done = Game.step()

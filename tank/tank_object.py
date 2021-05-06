@@ -195,7 +195,7 @@ class Tank():
             self.speed = 0
             self.speed_x = 0
             self.speed_y = 0
-        print('\ndamaged:', side, damage_dealed)
+        # print('\ndamaged:', side, damage_dealed)
         return damage_dealed
 
 

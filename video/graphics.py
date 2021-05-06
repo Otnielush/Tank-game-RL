@@ -11,7 +11,7 @@ MULTY_PIXEL_V = 50
 pygame.init()
 clock = pygame.time.Clock()
 
-DISPLAY = pygame.display.set_mode((WIDTH * MULTY_PIXEL_V * 2, HEIGHT * MULTY_PIXEL_V))
+DISPLAY = pygame.display.set_mode((WIDTH * MULTY_PIXEL_V , HEIGHT * MULTY_PIXEL_V))
 
 # loading pics
 # obstacles
@@ -145,8 +145,8 @@ def play_video(game, VIDEO):
     shot = False
     # coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.connection.env_from_server[0][:, :, :3] * 255), 0)
     # coll_map = pygame.transform.scale(coll_map, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
-    coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_coll[:, :, :3] * 255), 0)
-    coll_map = pygame.transform.scale(coll_map, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
+    # coll_map = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_coll[:, :, :3] * 255), 0)
+    # coll_map = pygame.transform.scale(coll_map, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
 
     # features_nn = pygame.transform.rotate(pygame.surfarray.make_surface(game.map_env[:, :, :3] * 255), 0)
     # features_nn = pygame.transform.scale(features_nn, (WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
@@ -157,6 +157,7 @@ def play_video(game, VIDEO):
             VIDEO[0] = False
             pygame.quit()
             return
+        '''
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 move = 1
@@ -175,8 +176,8 @@ def play_video(game, VIDEO):
 
         # for hand control
         game.connection.send_action(101, [move, turn, tower, shot, False])
-
-    DISPLAY.blit(coll_map, (DISPLAY.get_width() // 2, 0))
+    '''
+    # DISPLAY.blit(coll_map, (DISPLAY.get_width() // 2, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
 
     DISPLAY.blit(background, (0, 0))

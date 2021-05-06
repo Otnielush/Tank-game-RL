@@ -28,7 +28,8 @@ class player_obj():
             self.action_function = "another function for moving"
 
     def __str__(self):
-        return "'{}' id_conn: {}, tank: {}".format(self.name, self.id_connection, self.tank_type)
+        return "'{}' id_conn: {}, tank: {}, games: {}, win rate {}%, destroyed: {}".format(self.name, self.id_connection,
+                            self.tank_type, self.games_played, round(self.wins/self.games_played*100), self.tanks_killed)
 
     # when connected to Waitroom receive id
     def change_id(self, id_conn=-1, id_game=-1):
