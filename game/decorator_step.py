@@ -181,7 +181,10 @@ def step(self):
                         background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
 
             # erasing bullet from maps
-            self.map_env[old_xy[0], old_xy[1], 3] = 0
+            try:
+                self.map_env[old_xy[0], old_xy[1], 3] = 0
+            except:
+                print('problem bullet', self.bullets[i])
 
         else:
             if self.bullets[i].done:
@@ -246,7 +249,6 @@ def step(self):
     if MOVES_PER_FRAME > 1 or done:
         if self.frame_step == 1 or done:
             self.send_data_to_players(info)
-            self.steps += 1
             self.frame_step -= 1
         elif self.frame_step <= 0:
             self.frame_step = MOVES_PER_FRAME - 1
@@ -254,7 +256,6 @@ def step(self):
             self.frame_step -= 1
     else:
         self.send_data_to_players(info)
-        self.steps += 1
 
 
     # print('time:', round(timer), end='')

@@ -7,7 +7,7 @@ from video import graphics
 
 
 VIDEO = [True]
-ROUNDS = 10
+ROUNDS = 50
 VIDEO_ROUNDS = [200, 100]
 
 
@@ -28,7 +28,7 @@ team2[2].change_tank_type(t_type); team2[2].change_id(246)
 Game = gg.TankGame(MULTY_PIXEL)
 game_round = 1
 Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
-# Game.time_round_len = 2
+# Game.time_round_len = FRAME_RATE*30
 print('_______ Round 1 _______')
 
 # FOR TEST
@@ -38,7 +38,8 @@ print('_______ Round 1 _______')
 time_start = time.time()
 frame = 1
 
-graphics.video_build_map(Game)
+if VIDEO[0]:
+    graphics.video_build_map(Game)
 
 done = False
 while True:
@@ -46,6 +47,8 @@ while True:
     # stop game check TODO change to net connection so that the game and the players would be a different programs
     if done:
         print()
+        # saving history of rewards
+        # Game.rewards_to_csv(team1[0].id_game, 'rewards')
         # for training,
         for t in Game.id_tanks:
             Game.id_tanks[t].player.done()
@@ -62,7 +65,8 @@ while True:
         time_start = time.time()
         frame = 1
         Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
-        graphics.video_build_map(Game)
+        if VIDEO[0]:
+            graphics.video_build_map(Game)
         print('\r_______ Round', game_round, '_______')
 
     # players decisions to move
@@ -76,7 +80,7 @@ while True:
     if VIDEO[0]:
         graphics.play_video(Game, VIDEO)
 
-    print('\rFPS', round(frame/(time.time()-time_start), 1), end='')
+    print('\rFPS', round(frame/(time.time()-time_start+0.1), 1), end='')
 
     # print('\rspeed:', round(Game.team1[0].speed, 3), 'FPS:', round(frame/(time.time()-time_passed), 1),
           # 'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |')

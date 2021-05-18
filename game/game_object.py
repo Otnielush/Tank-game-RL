@@ -1,10 +1,13 @@
+from os import path, mkdir
+
 import numpy as np
 import random
 from copy import copy
 from tank.tank_object import tank_type, Tank
 from net.broadcasting import net_connection
 from options.video import FRAME_RATE
-import time
+import pandas as pd
+
 
 # game object
 # Steps: create, new_game
@@ -22,7 +25,8 @@ class TankGame():
         self.team2 = []
         self.id_tanks = {}
         self.connection = 0
-        self.rewards = 0  # {id, [step, reward, comment]}  # new game generates
+        self.rewards = 0  # [id, step] # new game generates
+        self.rewards_comment = 0
         self.steps = 0
         self.time_round_len = 5*60 * FRAME_RATE  # frames
 
@@ -86,10 +90,12 @@ class TankGame():
             self.id_tanks[id_tank] = self.team2[-1]
             id_tank += 1
 
-        # (num_players, 20000, 2))  # {id, step, [reward, comment]}
-        self.rewards = [[[0, 'comment about reward']
-                         for _ in range(20000)]
-                        for _ in range(num_players)]
+        # (num_players, self.time_round_len, 2))  # {id, step, [reward, comment]}
+        # self.rewards = [[[0, '']
+        #                  for _ in range(self.time_round_len)]
+        #                 for _ in range(num_players)]
+        self.rewards = np.zeros((num_players, self.time_round_len))
+        self.rewards_comment = np.zeros((num_players, self.time_round_len), dtype='<U30')
 
         self.map_generate()
         # Round timer
@@ -103,20 +109,22 @@ class TankGame():
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
             idd = self.team1[i].id_game - self.ID_START
+
             # env_map
             # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill); ammunition; round time left in %;
             # reward; info(start game, game done);
             self.connection.send_env_to_players(idd, env_team1,
                     [self.team1[i].X, self.team1[i].Y, self.team1[i].direction_tank, self.team1[i].direction_tower, self.team1[i].hp,
                      self.team1[i].speed, self.team1[i].reloading_ammo, self.team1[i].reloading_skill, self.team1[i].ammunition, timer],
-                    copy(self.rewards[idd][self.steps][0]), info)
+                    copy(self.rewards[idd, self.steps]), info)
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
             idd = self.team2[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team2,
                     [self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
                      self.team2[i].speed, self.team2[i].reloading_ammo, self.team2[i].reloading_skill, self.team2[i].ammunition, timer],
-                    copy(self.rewards[idd][self.steps][0]), info)
+                    copy(self.rewards[idd, self.steps]), info)
+        self.steps += 1
 
 
     # Making input for players
@@ -277,8 +285,27 @@ class TankGame():
 
     # {id, step, [reward, comment]}
     def reward(self, id_tank, score, comment):
-        self.rewards[id_tank][self.steps][0] += score
-        self.rewards[id_tank][self.steps][1] += (comment + ',')
+        if id_tank >= self.ID_START:
+            id_tank -= self.ID_START
+        # if id_tank == 0:
+            # print('step:', self.steps, score, '|', comment)
+        self.rewards[id_tank, self.steps] += score
+        self.rewards_comment[id_tank, self.steps] += (comment + ',')
+
+    # export rewards history
+    # in: real id tank, file to save
+    def rewards_to_csv(self, id_tank, file_name):
+
+        df = pd.DataFrame()
+        df['score'] = self.rewards[id_tank-self.ID_START, :self.steps+1]
+        df['comment'] = self.rewards_comment[id_tank - self.ID_START, :self.steps+1]
+
+        folder = './/player//players data//' + self.id_tanks[id_tank].name + '//'
+        if not path.exists(folder):
+            mkdir(path.dirname(folder))
+        file_name = folder+file_name+'.csv'
+        df.to_csv(file_name, index=None)
+        del(df)
 
 
 

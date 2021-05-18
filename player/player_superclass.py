@@ -60,9 +60,9 @@ class player_obj():
         pass
 
     def load_player(self):
-        folder = './/player//players data//'+self.name
-        if path.exists(folder):
-            with open(folder + '//config.json', 'r') as cfg:
+        file_config = './/player//players data//'+self.name+'//config.json'
+        if path.exists(file_config):
+            with open(file_config, 'r') as cfg:
                 config = json.load(cfg)
 
             params2load = ['games_played', 'wins', 'tanks_killed', 'deaths', 'bases_captured', 'draws']

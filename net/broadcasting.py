@@ -18,7 +18,7 @@ class net_connection():
         # reward,
         # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
         # ammunition; round time left in %
-        self.reward_from_server = np.zeros((num_players, 1))
+        self.reward_from_server = np.zeros((num_players))
         self.data_from_server = np.zeros((num_players,) + (1, data_size))
         self.info_from_server = {'game_start': False, 'game_done': False}  # game_start - starting new game; game_done - game finished
 

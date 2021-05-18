@@ -8,10 +8,11 @@ from options.video import WIDTH, HEIGHT, FRAME_RATE
 MULTY_PIXEL_V = 50
 
 # run display
-pygame.init()
+# pygame.init()
 clock = pygame.time.Clock()
 
 DISPLAY = pygame.display.set_mode((WIDTH * MULTY_PIXEL_V , HEIGHT * MULTY_PIXEL_V))
+
 
 # loading pics
 # obstacles
@@ -110,7 +111,9 @@ del(temp, temp2)
 
 # for backgroud building
 def video_build_map(game):
-    global background
+    global background, pygame
+    pygame.init()
+
     background.fill((139, 69, 19))
     # drawing background from game map
     for x in range(WIDTH):

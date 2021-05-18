@@ -1,8 +1,9 @@
 from numpy import argmax
 from copy import deepcopy, copy
 from random import randint
-from os import path, mkdir
-import json
+from os import path
+import pandas as pd
+
 
 if __name__ == '__main__': # for test
     class player_obj():
@@ -15,9 +16,9 @@ from collections import deque
 import itertools
 import numpy as np
 
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate
-from tensorflow.keras.optimizers import Adam
+import keras
+from keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate, Input
+from keras.optimizers import Adam
 
 LEARNING_RATE = 0.001
 ALPHA = 0.39  # renew outputs
@@ -31,7 +32,7 @@ REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
 
 RANDOM_ACTION_DECAY_FREQ = 10
 RANDOM_ACTION_DECAY = 5
-INITIAL_RANDOM_ACTION = 90
+INITIAL_RANDOM_ACTION = 10   # percent
 
 ENV_INPUT_2D_VIEW = (15, 15, 4)
 # accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
@@ -78,7 +79,8 @@ class player_RL(player_obj):
         print(self.name, 'game done.', end='')
         # training
         sample_transitions = self.replay_buffer.get_buffer()
-        acc = update_action_vect(self.model, sample_transitions, decoder=action_decoder)
+        save_targets = self.name if self.id_game == 101 else False
+        acc = update_action_vect(self.model, sample_transitions, decoder=action_decoder, save_targets=save_targets)
         print(' accuracy:', acc)
         self.replay_buffer.clear()
         self.save_model()
@@ -226,8 +228,8 @@ def build_model():
     # data:  (10, 1) # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
     # ammunition; round time left in %
 
-    input1 = tf.keras.layers.Input(shape=ENV_INPUT_2D_VIEW, name='map_env')
-    input2 = tf.keras.layers.Input(shape=(DATA_DIM,), name='data')
+    input1 = Input(shape=ENV_INPUT_2D_VIEW, name='map_env')
+    input2 = Input(shape=(DATA_DIM,), name='data')
     conv1 = Convolution2D(6, (3, 3), strides=(1), activation='relu')(input1)
     conv1 = MaxPool2D((2, 2))(conv1)
     conv2 = Convolution2D(8, (3, 3), strides=(1), activation='relu')(conv1)
@@ -239,7 +241,7 @@ def build_model():
     # (31)
     out = Dense(ACTIONS_DIM, activation='linear')(denc)
 
-    model = tf.keras.Model(inputs=[input1, input2], outputs=out)
+    model = keras.Model(inputs=[input1, input2], outputs=out)
 
     # model.add(Reshape((1, -1)))  # , input_shape=(WEIGHT, HEIGHT, 2)))
     # model.add(GRU(100, return_sequences=False, stateful=True, reset_after=False))
@@ -296,7 +298,7 @@ def update_action(action_model, sample_transitions, decoder=None):
 
     return train(action_model, [env_2d_obs, data_obs], batch_targets)
 
-def update_action_vect(action_model, sample_transitions, decoder=None):
+def update_action_vect(action_model, sample_transitions, decoder=None, save_targets=False):
     buf_size = len(sample_transitions)-1
     ds_env_2d = np.zeros( (buf_size,) + ENV_INPUT_2D_VIEW )
     ds_data = np.zeros( (buf_size, DATA_DIM) )
