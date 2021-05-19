@@ -57,7 +57,8 @@ class player_obj():
 
     # game round done
     def done(self):
-        pass
+        self.tank_ingame.accuracy = round(self.tank_ingame.num_shots / self.tank_ingame.num_hits * 100, 1)
+
 
     def load_player(self):
         file_config = './/player//players data//'+self.name+'//config.json'

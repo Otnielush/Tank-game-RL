@@ -28,8 +28,8 @@ team2[2].change_tank_type(t_type); team2[2].change_id(246)
 
 Game = gg.TankGame(MULTY_PIXEL)
 game_round = 1
-Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
-Game.time_round_len = FRAME_RATE*60
+Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO, type_m='shooting')
+# Game.time_round_len = FRAME_RATE*60
 print('_______ Round 1 _______')
 
 # FOR TEST
@@ -40,6 +40,7 @@ time_start = time.time()
 frame = 1
 
 if VIDEO[0]:
+    graphics.init_display(Game.width, Game.height)
     graphics.video_build_map(Game)
 
 done = False
@@ -67,6 +68,7 @@ while True:
         frame = 1
         Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
         if VIDEO[0]:
+            graphics.init_display(Game.width, Game.height)
             graphics.video_build_map(Game)
         print('\r_______ Round', game_round, '_______')
 

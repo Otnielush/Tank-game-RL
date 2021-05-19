@@ -8,10 +8,10 @@ t_simple        = [100,   20,       2,              5,             0.8,         
 
 
 class Tank():
-    def __init__(self, id_game, player, team_num, x, y, Pix_Cell):
+    def __init__(self, id_game, player, team_num, Pix_Cell):
         # map placement
-        self.X = x
-        self.Y = y
+        self.X = 0
+        self.Y = 0
 
         # TODO move this 2 to tank features
         self.width = 0.6
@@ -37,6 +37,9 @@ class Tank():
         self.reloading_ammo = 0  # seconds left
         self.reloading_skill = 0
         self.capture_points = 0
+        self.num_hits = 0
+        self.num_shots = 0
+        self.accuracy = 0  # percent
 
         # Building attributes by tank type
         for (key, value) in zip(tank_features, t_simple):
@@ -202,6 +205,7 @@ class Tank():
     def shot(self):
         self.reloading_ammo = self.reload_ammo
         self.ammunition -= 1
+        self.num_shots += 1
 
     def use_skill(self):
         self.reloading_skill = self.reload_skill

@@ -117,6 +117,7 @@ class player_RL(player_obj):
             args = [randint(0, 8), randint(9, 17), randint(18, 26), randint(27, 28), randint(29, 30)]
             return args, [Action_dict[args[0]], Action_dict[args[1]-9], Action_dict[args[2]-18], args[3]-27, args[4]-29]
         # preparing 2d map view
+
         predictions = self.model.predict([self.env_2d_view, self.data], batch_size=1)[0]
         # decoding into [-1: 1] and Boolean
         return action_decoder(predictions)
@@ -141,11 +142,11 @@ class player_RL(player_obj):
         if self.start_side == 'up':
             pass
         elif self.start_side == 'down':
-            view = np.rot90(view, 2)
+            view = np.rot90(view, 2, (1, 2))
         elif self.start_side == 'right':
-            view = np.rot90(view)
+            view = np.rot90(view, 1, (1, 2))
         else:
-            view = np.rot90(view, 3)
+            view = np.rot90(view, 3, (1, 2))
 
         self.env_2d_view = view
 

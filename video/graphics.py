@@ -11,113 +11,118 @@ MULTY_PIXEL_V = 50
 # pygame.init()
 clock = pygame.time.Clock()
 
-DISPLAY = pygame.display.set_mode((WIDTH * MULTY_PIXEL_V , HEIGHT * MULTY_PIXEL_V))
+def init_display(WIDTH, HEIGHT):
+    global DISPLAY, pygame, tank_obs, tank_obs2, tank_obs3, flag_red, flag_blue, tank_destroyed, land, rock, wall, \
+        forest, water, desert, swamp, bush, background, img_tank_base_red, img_tank_base_blue, tank_tower, \
+        img_tank_tower, tank_width, tank_height
+    DISPLAY = pygame.display.set_mode((WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
+    pygame.init()
+    pygame.display.update()
+    pygame.display.set_caption("Tank game RL")
 
 
-# loading pics
-# obstacles
-tank_obs = pygame.image.load(os.path.join('video', 'pics', 'tank_obs.webp'))
-tank_obs2 = pygame.image.load(os.path.join('video', 'pics', 'retro-pixel.webp'))
-tank_obs3 = pygame.image.load(os.path.join('video', 'pics', 'Tank Town V2.png'))
-flag_pic = pygame.image.load(os.path.join('video', 'pics', 'flag.png'))
+    # loading pics
+    # obstacles
+    tank_obs = pygame.image.load(os.path.join('video', 'pics', 'tank_obs.webp'))
+    tank_obs2 = pygame.image.load(os.path.join('video', 'pics', 'retro-pixel.webp'))
+    tank_obs3 = pygame.image.load(os.path.join('video', 'pics', 'Tank Town V2.png'))
+    flag_pic = pygame.image.load(os.path.join('video', 'pics', 'flag.png'))
 
-flag_red = pygame.transform.scale(flag_pic, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-flag_red.fill((255, 0, 0, 100), special_flags=pygame.BLEND_ADD)
-flag_blue = pygame.transform.scale(flag_pic, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-flag_blue.fill((0, 0, 255, 100), special_flags=pygame.BLEND_ADD)
+    flag_red = pygame.transform.scale(flag_pic, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    flag_red.fill((255, 0, 0, 100), special_flags=pygame.BLEND_ADD)
+    flag_blue = pygame.transform.scale(flag_pic, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    flag_blue.fill((0, 0, 255, 100), special_flags=pygame.BLEND_ADD)
 
-tank_destroyed = tank_obs3.subsurface((113, 112, 15, 15))
-temp = tank_obs3.subsurface((144, 48, 15, 15))
-land = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-land.fill((139, 69, 19, 100), special_flags=pygame.BLEND_ADD)
-temp = tank_obs.subsurface((116, 15, 28, 29))
-rock = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-temp = tank_obs.subsurface((30, 159, 28, 29))
-wall = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-temp = tank_obs.subsurface((58, 15, 28, 29))
-forest = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V)).convert_alpha()
-# all colors changing to black, except green
-pygame.transform.threshold(
-    dest_surf=forest,
-    surf=forest.copy(),
-    search_color=(8, 63, 33),
-    threshold=(50, 50, 50),
-    set_color=(0, 0, 0),
-    set_behavior=1,
-    search_surf=None,
-    inverse_set=True
-)
-forest.set_colorkey((0, 0, 0))
-temp = tank_obs.subsurface((116, 101, 28, 29))
-water = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-temp = tank_obs.subsurface((87, 362, 28, 29))
-desert = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-desert.fill((240, 240, 0, 100), special_flags=pygame.BLEND_MAX)
-temp = tank_obs2.subsurface((192, 347, 32, 30))
-temp2 = pygame.transform.scale(temp, (MULTY_PIXEL_V // 3, MULTY_PIXEL_V // 3))
-bush = pygame.Surface((MULTY_PIXEL_V, MULTY_PIXEL_V))
-for x in range(2):
-    for y in range(2):
-        bush.blit(temp2,
-                  (MULTY_PIXEL_V // 8 + MULTY_PIXEL_V // 4 * x * 2, MULTY_PIXEL_V // 8 + MULTY_PIXEL_V // 4 * y * 2))
-# black is now transparent
-bush.set_colorkey((0, 0, 0))
-temp = tank_obs.subsurface((87, 362, 28, 29))
-desert = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-temp = tank_obs3.subsurface((112, 48, 15, 15))
-swamp = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
-swamp.fill((139, 69, 19, 100), special_flags=pygame.BLEND_ADD)
-# {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
+    tank_destroyed = tank_obs3.subsurface((113, 112, 15, 15))
+    temp = tank_obs3.subsurface((144, 48, 15, 15))
+    land = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    land.fill((139, 69, 19, 100), special_flags=pygame.BLEND_ADD)
+    temp = tank_obs.subsurface((116, 15, 28, 29))
+    rock = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    temp = tank_obs.subsurface((30, 159, 28, 29))
+    wall = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    temp = tank_obs.subsurface((58, 15, 28, 29))
+    forest = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V)).convert_alpha()
+    # all colors changing to black, except green
+    pygame.transform.threshold(
+        dest_surf=forest,
+        surf=forest.copy(),
+        search_color=(8, 63, 33),
+        threshold=(50, 50, 50),
+        set_color=(0, 0, 0),
+        set_behavior=1,
+        search_surf=None,
+        inverse_set=True
+    )
+    forest.set_colorkey((0, 0, 0))
+    temp = tank_obs.subsurface((116, 101, 28, 29))
+    water = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    temp = tank_obs.subsurface((87, 362, 28, 29))
+    desert = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    desert.fill((240, 240, 0, 100), special_flags=pygame.BLEND_MAX)
+    temp = tank_obs2.subsurface((192, 347, 32, 30))
+    temp2 = pygame.transform.scale(temp, (MULTY_PIXEL_V // 3, MULTY_PIXEL_V // 3))
+    bush = pygame.Surface((MULTY_PIXEL_V, MULTY_PIXEL_V))
+    for x in range(2):
+        for y in range(2):
+            bush.blit(temp2,
+                      (MULTY_PIXEL_V // 8 + MULTY_PIXEL_V // 4 * x * 2, MULTY_PIXEL_V // 8 + MULTY_PIXEL_V // 4 * y * 2))
+    # black is now transparent
+    bush.set_colorkey((0, 0, 0))
+    temp = tank_obs.subsurface((87, 362, 28, 29))
+    desert = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    temp = tank_obs3.subsurface((112, 48, 15, 15))
+    swamp = pygame.transform.scale(temp, (MULTY_PIXEL_V, MULTY_PIXEL_V))
+    swamp.fill((139, 69, 19, 100), special_flags=pygame.BLEND_ADD)
+    # {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
 
-# background
-background = pygame.surface.Surface((WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
-background.fill((139, 69, 19))
-color_lines = (250, 250, 100)
-for x in np.arange(1, WIDTH):
-    pygame.draw.lines(background, color_lines, False,
-                      [(x * MULTY_PIXEL_V, 0), (x * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V)], 1)
-for y in np.arange(1, HEIGHT):
-    pygame.draw.lines(background, color_lines, False,
-                      [(0, y * MULTY_PIXEL_V), (WIDTH * MULTY_PIXEL_V, y * MULTY_PIXEL_V)], 1)
+    # background
+    background = pygame.surface.Surface((WIDTH * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V))
+    background.fill((139, 69, 19))
+    color_lines = (250, 250, 100)
+    for x in np.arange(1, WIDTH):
+        pygame.draw.lines(background, color_lines, False,
+                          [(x * MULTY_PIXEL_V, 0), (x * MULTY_PIXEL_V, HEIGHT * MULTY_PIXEL_V)], 1)
+    for y in np.arange(1, HEIGHT):
+        pygame.draw.lines(background, color_lines, False,
+                          [(0, y * MULTY_PIXEL_V), (WIDTH * MULTY_PIXEL_V, y * MULTY_PIXEL_V)], 1)
 
-pygame.display.update()
-pygame.display.set_caption("Tank game RL")
 
-# colors
 
-# TODO change to scaling by type tank
-tower_width = 0.4 * MULTY_PIXEL_V
-tower_height = 1 * MULTY_PIXEL_V
-tank_width = round(0.6 * MULTY_PIXEL_V)
-tank_height = 1 * MULTY_PIXEL_V
-# img_tank_base = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank.png')), (tank_width, tank_height))
-# img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank_tower.png')), (round(tower_width), round(tower_height)))
-img_tank_base_red = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
-                                       (tank_width, tank_height))
-img_tank_base_red.fill((100, 0, 0, 1), special_flags=pygame.BLEND_ADD)
-img_tank_base_blue = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
-                                       (tank_width, tank_height))
-img_tank_base_blue.fill((0, 0, 100, 1), special_flags=pygame.BLEND_ADD)
+    # colors
 
-img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankTurret.png')),
-                                        (round(tower_width), round(tower_height)))
+    # TODO change to scaling by type tank
+    tower_width = 0.4 * MULTY_PIXEL_V
+    tower_height = 1 * MULTY_PIXEL_V
+    tank_width = round(0.6 * MULTY_PIXEL_V)
+    tank_height = 1 * MULTY_PIXEL_V
+    # img_tank_base = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank.png')), (tank_width, tank_height))
+    # img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank_tower.png')), (round(tower_width), round(tower_height)))
+    img_tank_base_red = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
+                                           (tank_width, tank_height))
+    img_tank_base_red.fill((100, 0, 0, 1), special_flags=pygame.BLEND_ADD)
+    img_tank_base_blue = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
+                                           (tank_width, tank_height))
+    img_tank_base_blue.fill((0, 0, 100, 1), special_flags=pygame.BLEND_ADD)
 
-tank_tower = pygame.Surface((round(tower_width * 2), round(tower_height * 2)))
-tank_tower.blit(img_tank_tower, (
-round(tower_width) - img_tank_tower.get_width() // 2, round(tower_height) - img_tank_tower.get_height() // 2))
+    img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankTurret.png')),
+                                            (round(tower_width), round(tower_height)))
 
-del(temp, temp2)
+    tank_tower = pygame.Surface((round(tower_width * 2), round(tower_height * 2)))
+    tank_tower.blit(img_tank_tower, (
+    round(tower_width) - img_tank_tower.get_width() // 2, round(tower_height) - img_tank_tower.get_height() // 2))
+
+    del(temp, temp2)
 
 
 # for backgroud building
 def video_build_map(game):
     global background, pygame
-    pygame.init()
 
     background.fill((139, 69, 19))
     # drawing background from game map
-    for x in range(WIDTH):
-        for y in range(HEIGHT):
+    for x in range(game.width):
+        for y in range(game.height):
             # making background picture from game map
             idd = game.map_env[x, y, 0]
             idd_base_red = game.map_env[x, y, 1]
@@ -214,8 +219,8 @@ def play_video(game, VIDEO):
         if tank.hp <= 0:
             continue
         tank_body = pygame.transform.rotate(img_tank_base_blue, tank.direction_tank * 360)
-        tank_rect = tank_body.get_rect(center=(tank_width // 2, tank_height // 2))
-        DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL_V + tank_rect[0], tank.Y * MULTY_PIXEL_V + tank_rect[1]))
+        # tank_rect = tank_body.get_rect(center=(tank_width // 2, tank_height // 2))
+        DISPLAY.blit(tank_body, (tank.X * MULTY_PIXEL_V, tank.Y * MULTY_PIXEL_V))
         tower = pygame.transform.rotate(img_tank_tower, (tank.direction_tank + tank.direction_tower) * 360)
         tower_rect = tower.get_rect()
         DISPLAY.blit(tower, (tower_rect[0] + tank.X * MULTY_PIXEL_V + tank.crop_x, tower_rect[
@@ -227,3 +232,14 @@ def play_video(game, VIDEO):
 
     pygame.display.update()
     time.sleep(1 / (FRAME_RATE + 15))
+
+
+def destroy_tank(x, y, width, height, direction):
+    global background
+    tank_body = pygame.rotate(pygame.scale(tank_destroyed,
+                (int(round(width * MULTY_PIXEL_V)), int(round(height * MULTY_PIXEL_V)))), direction * 360 + 180)
+    background.blit(tank_body, (x * MULTY_PIXEL_V, y * MULTY_PIXEL_V))
+
+def destroy_wall(x, y):
+    global background
+    background.blit(land, (int(x) * MULTY_PIXEL_V, int(y) * MULTY_PIXEL_V))

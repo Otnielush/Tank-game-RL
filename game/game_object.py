@@ -8,6 +8,25 @@ from net.broadcasting import net_connection
 from options.video import FRAME_RATE
 import pandas as pd
 
+# class for training
+class dummy():
+    def __init__(self, tank_type='simple'):
+        self.name = 'dummy'
+        self.id_connection = 100000
+        self.tank_type = tank_type
+        self.tank_ingame = ''
+        self.games_played = 0
+        self.wins = 0
+
+    def change_id(self, id_game):
+        self.id_game = id_game
+
+    def connected_new_game(self, net_connection):
+        self.connection = net_connection
+
+    def move(self):
+        pass
+
 
 # game object
 # Steps: create, new_game
@@ -54,7 +73,7 @@ class TankGame():
 
     # start new round with array of connected players [player, ...]
     # id starts from 101
-    def new_game(self, width, height, team1_payers, team2_payers, VIDEO):
+    def new_game(self, width, height, team1_players, team2_players, VIDEO, type_m='random'):
         self.width = width
         self.height = height
         self.VIDEO = VIDEO
@@ -67,25 +86,35 @@ class TankGame():
         self.bullets = []
         self.bullets_in_act = []  # ids of bullets - id_bul ( for bullets array )
         self.id_bul = 200   # id bullets
-        num_players = len(team1_payers) + len(team2_payers)
-        self.connection = net_connection(num_players, False, (width, height, 4), 10, (5,))
+
+        num_players = len(team1_players) + len(team2_players)
+
+        if type_m == 'shooting':
+            self.height = 13
+            self.width = 13
+            num_players_train = len(team1_players)
+            self.connection = net_connection(num_players_train, False, (self.width, self.height, 4), 10, (5,))
+            # adding dummy tanks
+            team1_players.extend([dummy() for _ in range(4)])
+            team2_players = [dummy() for _ in range(8)]
+        else:
+            self.connection = net_connection(num_players, False, (width, height, 4), 10, (5,))
+
 
         # Creating object Tank for players and sending connection
-        for i in range(len(team1_payers)):
-            self.team1.append(Tank(id_tank, team1_payers[i], 1, 0, 0, self.PIX_CELL))
-            team1_payers[i].change_id(id_game=id_tank)
-            team1_payers[i].start_side = 'up'
-            team1_payers[i].tank_ingame = self.team1[-1]
-            team1_payers[i].games_played += 1
+        for i in range(len(team1_players)):
+            self.team1.append(Tank(id_tank, team1_players[i], 1, self.PIX_CELL))
+            team1_players[i].change_id(id_game=id_tank)
+            team1_players[i].tank_ingame = self.team1[-1]
+            team1_players[i].games_played += 1
             self.team1[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team1[-1]
             id_tank += 1
-        for i in range(len(team2_payers)):
-            self.team2.append(Tank(id_tank, team2_payers[i], 2, 0, 0, self.PIX_CELL))
-            team2_payers[i].change_id(id_game=id_tank)
-            team2_payers[i].start_side = 'down'
-            team2_payers[i].tank_ingame = self.team2[-1]
-            team2_payers[i].games_played += 1
+        for i in range(len(team2_players)):
+            self.team2.append(Tank(id_tank, team2_players[i], 2, self.PIX_CELL))
+            team2_players[i].change_id(id_game=id_tank)
+            team2_players[i].tank_ingame = self.team2[-1]
+            team2_players[i].games_played += 1
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team2[-1]
             id_tank += 1
@@ -97,7 +126,16 @@ class TankGame():
         self.rewards = np.zeros((num_players, self.time_round_len))
         self.rewards_comment = np.zeros((num_players, self.time_round_len), dtype='<U30')
 
-        self.map_generate()
+        if type_m == 'shooting':
+            for tank in self.team1:
+                tank.reload_ammo /= 4
+                if tank.name == 'dummy':
+                    tank.hp = 20
+            for tank in self.team1:
+                tank.hp = 20
+            self.map_generate_shooting(num_players_train)
+        else:
+            self.map_generate_random()
         # Round timer
         self.time_passed = 0
         # sending ENV to network connection
@@ -108,6 +146,8 @@ class TankGame():
         timer = (self.time_round_len - self.time_passed) / self.time_round_len
         env_team1 = self.build_env_map_team(1)
         for i in range(len(self.team1)):
+            if self.team1[i].name == 'dummy':
+                continue
             idd = self.team1[i].id_game - self.ID_START
 
             # env_map
@@ -119,6 +159,8 @@ class TankGame():
                     copy(self.rewards[idd, self.steps]), info)
         env_team2 = self.build_env_map_team(2)
         for i in range(len(self.team2)):
+            if self.team2[i].name == 'dummy':
+                continue
             idd = self.team2[i].id_game - self.ID_START
             self.connection.send_env_to_players(idd, env_team2,
                     [self.team2[i].X, self.team2[i].Y, self.team2[i].direction_tank, self.team2[i].direction_tower, self.team2[i].hp,
@@ -202,7 +244,7 @@ class TankGame():
         #     self.map[self.PIX_CELL:self.PIX_CELL * (self.width - 2), self.PIX_CELL*(self.height-2):self.PIX_CELL * (self.height-1), 2]
 
 
-    def map_generate(self):
+    def map_generate_random(self):
         # each layer of map mean:
         # 0 - obstacles {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
         # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
@@ -210,7 +252,6 @@ class TankGame():
         # 3 - Bullets
         # LAST -  fog of war (not sending)
         M = self.PIX_CELL
-        # self.map = np.zeros((self.width*M, self.height*M, 5))  # map for game/video
         self.map_env = np.zeros((self.width, self.height, 4))  # map for input AI players  Layers: 0 - obstacles, 1 - friend team, 2 - enemy`s team, 3 - bullets (because of rockets
         self.map_coll = np.zeros((self.width*M, self.height*M, 3))  # layers: 0-obstacles; 1-moving objects. 2- bullets| All with id numbers. Obstacles ids from 1. Tanks ids from 101++
 
@@ -260,11 +301,11 @@ class TankGame():
             self.team1[i].Y = y_pos
             self.team1[i].X = tank_place
             self.team1[i].calc_tank_coordinates(tank_place*M, y_pos*M)
-            self.team1[i].start_side = 'up'
+            self.team1[i].player.start_side = 'up'
 
             # self.map[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.tank_type_d[self.team1[i].type]
             self.map_env[tank_place: tank_place+max(int(self.team1[i].width), 1),
-                            y_pos:y_pos+ max(1, int(self.team2[i].height)), 1] = self.tank_type_d[self.team1[i].type]
+                            y_pos:y_pos+ max(1, int(self.team1[i].height)), 1] = self.tank_type_d[self.team1[i].type]
             self.map_coll[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.team1[i].id_game
             team_free_cells[0].remove(tank_place)
 
@@ -276,7 +317,7 @@ class TankGame():
             self.team2[i].Y = y_pos
             self.team2[i].X = tank_place
             self.team2[i].calc_tank_coordinates(tank_place * M, y_pos*M)
-            self.team2[i].start_side = 'down'
+            self.team2[i].player.start_side = 'down'
 
             # self.map[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 2] = self.tank_type_d[self.team2[i].type]
             self.map_env[tank_place: tank_place+max(int(self.team2[i].width), 1),
@@ -310,6 +351,88 @@ class TankGame():
         df.to_csv(file_name, index=None)
         del(df)
 
+
+    def map_generate_shooting(self, num_players):
+        # each layer of map mean:
+        # 0 - obstacles {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
+        # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
+        # 2 - blue team with same types
+        # 3 - Bullets
+        # LAST -  fog of war (not sending)
+        M = self.PIX_CELL
+        self.map_env = np.zeros((self.width, self.height,
+                                 4))  # map for input AI players  Layers: 0 - obstacles, 1 - friend team, 2 - enemy`s team, 3 - bullets (because of rockets
+        self.map_coll = np.zeros((self.width * M, self.height * M,
+                                  3))  # layers: 0-obstacles; 1-moving objects. 2- bullets| All with id numbers. Obstacles ids from 1. Tanks ids from 101++
+
+        # Adding obstacles randomly on map.
+        for i in range(int(self.width*self.height*0.15)):
+            obs_x = random.randint(1, self.width-1)
+            obs_y = random.randint(1, self.height-1)
+            obstacle = self.map_obs_d[random.choice(self.map_obs)]
+            self.map_env[obs_x, obs_y, 0] = obstacle
+            if obstacle > 0.85:
+                self.map_coll[obs_x * M:(obs_x + 1) * M, obs_y * M:(obs_y + 1) * M, 0] = obstacle
+
+        # Border of map
+        self.map_coll[:, 0:M, 0] = 1
+        self.map_coll[:, (self.height - 1) * M:(self.height) * M, 0] = 1
+        self.map_coll[0:M, :, 0] = 1
+        self.map_coll[(self.width - 1) * M:self.width * M, :, 0] = 1
+        self.map_env[:, [0, -1], 0] = 1
+        self.map_env[[0, -1], :, 0] = 1
+
+        # base coordinates: ["team", "array of Xs or Ys", "start coord, end coord"] in Pixels!
+        self.map_base_xy = np.array([[[0, 0], [0, 0]],
+                                     [[0, 0],
+                                      [0, 0]]])
+
+        # Adding tanks
+        #  putting tanks from team 1 to map, layer 1
+        y_pos = self.height // 2
+        half_x = num_players // 2
+        x_pos = np.arange(self.width // 2 - half_x, self.width // 2 - half_x + num_players, 1)
+        print('map', half_x, x_pos)
+        # dummy possitions
+        x_cent = self.width // 2
+        y_cent = self.height // 2
+        x_dummy = [x_cent, self.width-3, x_cent, 2]
+        y_dummy = [2, y_cent, self.height-3, y_cent]
+        dir_dummy = [0, 0.75, 0.5, 0.25]
+        i_p = 0
+        i_d = 0
+        for i in range(len(self.team1)):
+            if self.team1[i].name == 'dummy':
+                self.team1[i].Y = y_dummy[i_d]
+                self.team1[i].X = x_dummy[i_d]
+                self.team1[i].direction_tank = dir_dummy[i_d]
+                i_d += 1
+            else:
+                self.team1[i].Y = y_pos
+                self.team1[i].X = x_pos[i_p]
+                i_p += 1
+            self.team1[i].calc_tank_coordinates(self.team1[i].X * M, self.team1[i].Y * M)
+            self.team1[i].player.start_side = 'up'
+
+            self.map_env[self.team1[i].X: self.team1[i].X + max(int(self.team1[i].width), 1),
+            self.team1[i].Y:self.team1[i].Y + max(1, int(self.team1[i].height)), 1] = self.tank_type_d[self.team1[i].type]
+            self.map_coll[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.team1[i].id_game
+
+
+        x_dummy = [x_cent-2, x_cent+2, self.width-3, self.width-3, x_cent-2, x_cent+2, 2, 2]
+        y_dummy = [2, 2, y_cent-2, y_cent+2, self.height-3, self.height-3, y_cent-2, y_cent+2]
+        dir_dummy = [0, 0.75, 0.5, 0.25]
+        #  team 2 to map, layer 2
+        for i in range(len(self.team2)):
+            self.team2[i].direction_tank = dir_dummy[i//2]
+            self.team2[i].Y = y_dummy[i]
+            self.team2[i].X = x_dummy[i]
+            self.team2[i].calc_tank_coordinates(self.team2[i].X * M, self.team2[i].Y * M)
+            self.team2[i].player.start_side = 'down'
+
+            self.map_env[self.team2[i].X: self.team2[i].X + max(int(self.team2[i].width), 1),
+            self.team2[i].Y:self.team2[i].Y + max(1, int(self.team2[i].height)), 2] = self.tank_type_d[self.team2[i].type]
+            self.map_coll[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 1] = self.team2[i].id_game
 
 
 

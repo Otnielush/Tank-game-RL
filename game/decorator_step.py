@@ -2,7 +2,7 @@ from .game_object import TankGame
 from tank.ammo_object import Ammo
 import time
 from options.video import MOVES_PER_FRAME, WIDTH, HEIGHT, FRAME_RATE
-from video.graphics import land, background, MULTY_PIXEL_V, tank_destroyed
+from video.graphics import destroy_tank, destroy_wall
 from pygame.transform import rotate, scale
 
 Capture_points_win = 40*FRAME_RATE
@@ -11,7 +11,6 @@ Capture_points_win = 40*FRAME_RATE
 # calculate moves from actions
 # observation, reward, done, info = env.step(actions)  - must be like that
 def step(self):
-    global background
     info = None
     done = False
     win_draw = False
@@ -31,6 +30,8 @@ def step(self):
     for i in range(len(self.team1)):
         if self.team1[i].hp > 0:
             team1_alive += 1
+            if self.team2[i].name == 'dummy':
+                continue
             idd = self.team1[i].id_game - self.ID_START
             old_xy, old_coords, shot, skill = self.team1[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
@@ -54,13 +55,15 @@ def step(self):
     for i in range(len(self.team2)):
         if self.team2[i].hp > 0:
             team2_alive += 1
+            if self.team2[i].name == 'dummy':
+                continue
             idd = self.team2[i].id_game - self.ID_START
             old_xy, old_coords, shot, skill = self.team2[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
             # capture points
             if (((self.team2[i].coords_xy[0] >= self.map_base_xy[0, 0, 0]) & (self.team2[i].coords_xy[0] <= self.map_base_xy[0, 0, 1]))
-                    & ((self.team2[i].coords_xy[1] >= self.map_base_xy[0, 1, 0]) & (self.team2[i].coords_xy[1] <= self.map_base_xy[0, 1, 1]))).any():
+                & ((self.team2[i].coords_xy[1] >= self.map_base_xy[0, 1, 0]) & (self.team2[i].coords_xy[1] <= self.map_base_xy[0, 1, 1]))).any():
                 self.team2[i].capture_points += 1
                 team2_capture_points += self.team2[i].capture_points
             else:
@@ -117,11 +120,14 @@ def step(self):
                                   self.id_tanks[self.bullets[i].damaged_target_id].coords_xy[1], 1] = 0
                     # video
                     if self.VIDEO[0]:
-                        tank_body = rotate(scale(tank_destroyed, (round(self.id_tanks[self.bullets[i].damaged_target_id].width*MULTY_PIXEL_V),
-                                                                  round(self.id_tanks[self.bullets[i].damaged_target_id].height*MULTY_PIXEL_V))),
-                                           self.id_tanks[self.bullets[i].damaged_target_id].direction_tank * 360 + 180)
-                        background.blit(tank_body, (self.id_tanks[self.bullets[i].damaged_target_id].X * MULTY_PIXEL_V,
-                                                    self.id_tanks[self.bullets[i].damaged_target_id].Y * MULTY_PIXEL_V))
+                        destroy_tank(self.id_tanks[self.bullets[i].damaged_target_id].X, self.id_tanks[self.bullets[i].damaged_target_id].Y,
+                                     self.id_tanks[self.bullets[i].damaged_target_id].width, self.id_tanks[self.bullets[i].damaged_target_id].height,
+                                     self.id_tanks[self.bullets[i].damaged_target_id].direction_tank)
+                        # tank_body = rotate(scale(tank_destroyed, (round(self.id_tanks[self.bullets[i].damaged_target_id].width*MULTY_PIXEL_V),
+                        #                                           round(self.id_tanks[self.bullets[i].damaged_target_id].height*MULTY_PIXEL_V))),
+                        #                    self.id_tanks[self.bullets[i].damaged_target_id].direction_tank * 360 + 180)
+                        # background.blit(tank_body, (self.id_tanks[self.bullets[i].damaged_target_id].X * MULTY_PIXEL_V,
+                        #                             self.id_tanks[self.bullets[i].damaged_target_id].Y * MULTY_PIXEL_V))
                     # stats
                     self.id_tanks[self.bullets[i].damaged_target_id].player.deaths += 1
                     self.bullets[i].parent.player.tanks_killed += 1
@@ -180,7 +186,8 @@ def step(self):
                     self.map_coll[int(self.bullets[i].X)*self.PIX_CELL:int(self.bullets[i].X + 1)*self.PIX_CELL,
                                 int(self.bullets[i].Y)*self.PIX_CELL:int(self.bullets[i].Y + 1)*self.PIX_CELL, 0] = 0
                     if self.VIDEO[0]:
-                        background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
+                        destroy_wall(self.bullets[i].X, self.bullets[i].Y)
+                        # background.blit(land, (int(self.bullets[i].X) * MULTY_PIXEL_V, int(self.bullets[i].Y) * MULTY_PIXEL_V))
 
             # erasing bullet from maps
             try:
