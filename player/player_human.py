@@ -1,10 +1,16 @@
 import keyboard
 
+if __name__ == '__main__': # for test
+    class player_obj():
+        def __init__(self, name):
+            pass
+else:
+    from .player_superclass import player_obj
 
-class player_human():
-    def __init__(self, id, name):
+class player_human(player_obj):
+    def __init__(self, name):
+        super(player_human, self).__init__(name)
         self.id = id
-        self.name = name
         self.score = 0
         self.last_action = 0
 
@@ -29,6 +35,9 @@ class player_human():
             self.last_action = 'right'
 
         return self.last_action
+
+    def move(self):
+        pass
 
 
 

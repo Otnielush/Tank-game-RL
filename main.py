@@ -15,9 +15,10 @@ VIDEO_ROUNDS = [200, 100]
 
 t_type = 'simple'
 
-team1 = [Player.player_RL("RL1t1"), Player.player_RL('RL2t1')]
+team1 = [Player.player_RL("RL1t1"), Player.player_RL('RL2t1'), Player.player_AI('Bob')]
 team1[0].change_tank_type(t_type); team1[0].change_id(242)
 team1[1].change_tank_type(t_type); team1[1].change_id(243)
+team1[2].change_tank_type(t_type); team1[2].change_id(247)
 
 team2 = [Player.player_RL('RL1t2'), Player.player_RL('RL2t2'), Player.player_RL('RL3t2')]
 team2[0].change_tank_type(t_type); team2[0].change_id(244)
@@ -28,7 +29,7 @@ team2[2].change_tank_type(t_type); team2[2].change_id(246)
 Game = gg.TankGame(MULTY_PIXEL)
 game_round = 1
 Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO)
-# Game.time_round_len = FRAME_RATE*30
+Game.time_round_len = FRAME_RATE*60
 print('_______ Round 1 _______')
 
 # FOR TEST

@@ -16,9 +16,12 @@ from collections import deque
 import itertools
 import numpy as np
 
-import keras
-from keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate, Input
-from keras.optimizers import Adam
+# import keras
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate, Input
+from tensorflow.keras.optimizers import Adam
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 LEARNING_RATE = 0.001
 ALPHA = 0.39  # renew outputs
@@ -30,6 +33,7 @@ NUM_EPOCHS = 20
 GAMMA = 0.96
 REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
 
+                # RL #
 RANDOM_ACTION_DECAY_FREQ = 10
 RANDOM_ACTION_DECAY = 5
 INITIAL_RANDOM_ACTION = 10   # percent
@@ -152,6 +156,7 @@ class player_RL(player_obj):
         # check folder for saves
         folder = './/player//players data//'+self.name+'//model_2d'
         if path.exists(folder+'.index'):
+        # if path.exists(folder):
             self.model.load_weights(folder)
             print(self.name, 'model loaded')
 
@@ -161,6 +166,7 @@ class player_RL(player_obj):
         super(player_RL, self).save_model()
         folder = './/player//players data//' + self.name + '//model_2d'
         self.model.save_weights(folder)
+        # self.model.save(folder)
 
 
 
@@ -241,7 +247,7 @@ def build_model():
     # (31)
     out = Dense(ACTIONS_DIM, activation='linear')(denc)
 
-    model = keras.Model(inputs=[input1, input2], outputs=out)
+    model = tf.keras.Model(inputs=[input1, input2], outputs=out)
 
     # model.add(Reshape((1, -1)))  # , input_shape=(WEIGHT, HEIGHT, 2)))
     # model.add(GRU(100, return_sequences=False, stateful=True, reset_after=False))

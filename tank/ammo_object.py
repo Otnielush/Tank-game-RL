@@ -55,7 +55,7 @@ class Ammo():
 
     def move(self, coll_map):
         # remove old coords from collision map
-        coll_map[round(self.X*self.PIX_CELL), round(self.Y*self.PIX_CELL), 2] = 0
+        coll_map[int(round(self.X*self.PIX_CELL)), int(round(self.Y*self.PIX_CELL)), 2] = 0
         old_xy = deepcopy(self.coords_xy)
         self.X += self.speed_x
         self.Y += self.speed_y

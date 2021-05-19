@@ -237,6 +237,9 @@ class TankGame():
         # self.map[base_place*M:(base_place+2)*M, (self.height-2)*M:(self.height-1)*M, 2] = 1
         self.map_env[base_place:(base_place+2), 1, 1] = 1
         self.map_env[base_place:(base_place+2), (self.height-2), 2] = 1
+        # base coordinates: ["team", "array of Xs or Ys", "start coord, end coord"] in Pixels!
+        self.map_base_xy = np.array([[[base_place*M, (base_place+2)*M], [0, M]],
+                                     [[base_place*M, (base_place+2)*M], [(self.height-2)*M, (self.height-1)*M]]])
 
         # self.build_collision_map()  # dont need more
 

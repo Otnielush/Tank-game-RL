@@ -166,7 +166,7 @@ def play_video(game, VIDEO):
             VIDEO[0] = False
             pygame.quit()
             return
-        '''
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 move = 1
@@ -184,8 +184,8 @@ def play_video(game, VIDEO):
                 tower = -1
 
         # for hand control
-        game.connection.send_action(101, [move, turn, tower, shot, False])
-    '''
+        game.connection.send_action(103, [move, turn, tower, shot, False])
+
     # DISPLAY.blit(coll_map, (DISPLAY.get_width() // 2, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
 
@@ -223,8 +223,7 @@ def play_video(game, VIDEO):
 
     # Bullets
     for i in game.bullets_in_act:
-        pygame.draw.circle(DISPLAY, (255, 0, 0), (game.bullets[i].X * MULTY_PIXEL_V, game.bullets[i].Y * MULTY_PIXEL_V),
-                           3)
+        pygame.draw.circle(DISPLAY, (255, 0, 0), (int(game.bullets[i].X * MULTY_PIXEL_V), int(game.bullets[i].Y * MULTY_PIXEL_V)), 3)
 
     pygame.display.update()
     time.sleep(1 / (FRAME_RATE + 15))

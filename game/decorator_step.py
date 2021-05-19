@@ -5,7 +5,7 @@ from options.video import MOVES_PER_FRAME, WIDTH, HEIGHT, FRAME_RATE
 from video.graphics import land, background, MULTY_PIXEL_V, tank_destroyed
 from pygame.transform import rotate, scale
 
-Capture_points_win = 60*FRAME_RATE
+Capture_points_win = 40*FRAME_RATE
 
 
 # calculate moves from actions
@@ -36,10 +36,11 @@ def step(self):
             self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
             # capture points
-            if self.map_env[self.team1[i].coords_xy[0]//self.PIX_CELL, self.team1[i].coords_xy[1]//self.PIX_CELL, 2].any() == 1:
+            if (((self.team1[i].coords_xy[0] >= self.map_base_xy[1, 0, 0]) & (self.team1[i].coords_xy[0] <= self.map_base_xy[1, 0, 1]))
+            & ((self.team1[i].coords_xy[1] >= self.map_base_xy[1, 1, 0]) & (self.team1[i].coords_xy[1] <= self.map_base_xy[1, 1, 1]))).any():
                 self.team1[i].capture_points += 1
                 team1_capture_points += self.team1[i].capture_points
-            elif self.team1[i].capture_points > 0:
+            else:
                 self.team1[i].capture_points = 0
 
             if shot:
@@ -58,10 +59,11 @@ def step(self):
             self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps
             self.reward(idd, self.score_move, 'move')
             # capture points
-            if self.map_env[self.team2[i].coords_xy[0]//self.PIX_CELL, self.team2[i].coords_xy[1]//self.PIX_CELL, 1].any() == 1:
+            if (((self.team2[i].coords_xy[0] >= self.map_base_xy[0, 0, 0]) & (self.team2[i].coords_xy[0] <= self.map_base_xy[0, 0, 1]))
+                    & ((self.team2[i].coords_xy[1] >= self.map_base_xy[0, 1, 0]) & (self.team2[i].coords_xy[1] <= self.map_base_xy[0, 1, 1]))).any():
                 self.team2[i].capture_points += 1
                 team2_capture_points += self.team2[i].capture_points
-            elif self.team2[i].capture_points > 0:
+            else:
                 self.team2[i].capture_points = 0
 
             if shot:
@@ -270,9 +272,9 @@ def move_obj_on_maps(self, obj, layer, old_xy, old_coords):
     self.map_coll[obj.coords_xy[0], obj.coords_xy[1], 1 if layer < 3 else 2] = obj.id_game
     # self.map[old_coords[0], old_coords[1], layer] = 0
     # self.map[obj.coords_xy[0], obj.coords_xy[1], layer] = self.tank_type_d[obj.type] if layer < 3 else 1
-    self.map_env[round(old_xy[0]), round(old_xy[1]), layer] = 0
-    self.map_env[round(obj.X): round(obj.X+max(obj.width, 1)),
-                    round(obj.Y): round(obj.Y + max(obj.height, 1)), layer] = self.tank_type_d[obj.type] if layer < 3 else 1
+    self.map_env[int(round(old_xy[0])), int(round(old_xy[1])), layer] = 0
+    self.map_env[int(round(obj.X)): int(round(obj.X+max(obj.width, 1))),
+                    int(round(obj.Y)): int(round(obj.Y + max(obj.height, 1))), layer] = self.tank_type_d[obj.type] if layer < 3 else 1
 
 
 setattr(TankGame, 'move_obj_on_maps', move_obj_on_maps)
