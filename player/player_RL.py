@@ -36,7 +36,7 @@ REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
                 # RL #
 RANDOM_ACTION_DECAY_FREQ = 10
 RANDOM_ACTION_DECAY = 5
-INITIAL_RANDOM_ACTION = 10   # percent
+INITIAL_RANDOM_ACTION = 90   # percent
 
 ENV_INPUT_2D_VIEW = (15, 15, 4)
 # accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
@@ -243,8 +243,10 @@ def build_model():
     conv2 = MaxPool2D((2, 2))(conv2)
     fl = Flatten()(conv2)
     conc = Concatenate(axis=1)([fl, input2])
-    dr = Dropout(0.5)(conc)
-    denc = Dense(100, activation='relu')(dr)
+    dr = Dropout(0.25)(conc)
+    denc = Dense(30, activation='relu')(dr)
+    denc = Dense(30, activation='relu')(denc)
+    denc = Dense(30, activation='relu')(denc)
     # (31)
     out = Dense(ACTIONS_DIM, activation='linear')(denc)
 

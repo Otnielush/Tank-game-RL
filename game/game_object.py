@@ -10,13 +10,33 @@ import pandas as pd
 
 # class for training
 class dummy():
-    def __init__(self, tank_type='simple'):
+    def __init__(self, moving=False, tank_type='simple'):
         self.name = 'dummy'
         self.id_connection = 100000
         self.tank_type = tank_type
-        self.tank_ingame = ''
         self.games_played = 0
         self.wins = 0
+        self.deaths = 0
+        self.id_game = 0
+        self.connection = 0
+        self.env = 0
+        self.data = 0
+        self.reward = 0
+        self.info = 0
+        self.tank_ingame = ''  # tank object in game
+        self.start_side = ''  # starting side of map for RL
+
+        self.games_played = 0
+        self.wins = 0
+        self.tanks_killed = 0
+        self.deaths = 0
+        self.bases_captured = 0
+        self.draws = 0
+        self.num_shots = 0
+        self.num_hits = 0
+
+        self.moving = moving
+
 
     def change_id(self, id_game):
         self.id_game = id_game
@@ -25,8 +45,10 @@ class dummy():
         self.connection = net_connection
 
     def move(self):
+        if self.moving:
+            self.connection.send_action(self.id_game, [(random.random()-0.5)/2, (random.random()-0.5)/2, (random.random()-0.5)/2, 0, 0])
+    def done(self):
         pass
-
 
 # game object
 # Steps: create, new_game
@@ -47,8 +69,6 @@ class TankGame():
         self.rewards = 0  # [id, step] # new game generates
         self.rewards_comment = 0
         self.steps = 0
-        self.time_round_len = 5*60 * FRAME_RATE  # frames
-
 
         # SCORES
         self.score_win              = 5
@@ -66,40 +86,46 @@ class TankGame():
         self.score_take_dmg         = self.score_dmg * -1
         self.score_capture          = 0.01
 
-
         self.data = 0
         self.frame_step = 0
 
 
     # start new round with array of connected players [player, ...]
     # id starts from 101
-    def new_game(self, width, height, team1_players, team2_players, VIDEO, type_m='random'):
+    def new_game(self, width, height, team1_pl, team2_pl, VIDEO, type_m='random'):
+        print('\nNew game, type:', type_m)
         self.width = width
         self.height = height
         self.VIDEO = VIDEO
 
         self.steps = 0
+        self.frame_step = 0
         self.team1 = []  # [Tank]
         self.team2 = []
+        self.id_tanks = {}
+        self.game_type = type_m
         self.ID_START = 101
         id_tank = self.ID_START
         self.bullets = []
         self.bullets_in_act = []  # ids of bullets - id_bul ( for bullets array )
         self.id_bul = 200   # id bullets
+        self.time_round_len = 5 * 60 * FRAME_RATE  # frames
 
-        num_players = len(team1_players) + len(team2_players)
 
         if type_m == 'shooting':
-            self.height = 13
-            self.width = 13
-            num_players_train = len(team1_players)
-            self.connection = net_connection(num_players_train, False, (self.width, self.height, 4), 10, (5,))
-            # adding dummy tanks
-            team1_players.extend([dummy() for _ in range(4)])
-            team2_players = [dummy() for _ in range(8)]
+            self.height = 15
+            self.width = 15
+            num_players_train = len(team1_pl)
+            team1_players = np.concatenate((team1_pl, [dummy() for _ in range(4)]), axis=None)
+            team2_players = [dummy(moving=True) for _ in range(8)]
+            self.time_round_len = int(self.time_round_len * 0.5)
         else:
-            self.connection = net_connection(num_players, False, (width, height, 4), 10, (5,))
+            team1_players = copy(team1_pl)
+            team2_players = copy(team2_pl)
+        del(team1_pl, team2_pl)
 
+        num_players = len(team1_players) + len(team2_players)
+        self.connection = net_connection(num_players, False, (self.width, self.height, 4), 10, (5,))
 
         # Creating object Tank for players and sending connection
         for i in range(len(team1_players)):
@@ -131,7 +157,7 @@ class TankGame():
                 tank.reload_ammo /= 4
                 if tank.name == 'dummy':
                     tank.hp = 20
-            for tank in self.team1:
+            for tank in self.team2:
                 tank.hp = 20
             self.map_generate_shooting(num_players_train)
         else:
@@ -353,12 +379,7 @@ class TankGame():
 
 
     def map_generate_shooting(self, num_players):
-        # each layer of map mean:
-        # 0 - obstacles {'land': 0, 'bush': 0.14, 'desert': 0.29, 'forest': 0.43, 'water': 0.57, 'swamp': 0.71, 'wall': 0.86, 'rock': 1}
-        # 1 - red team (from 0.1 - 1 type of tanks: simple, freezer, artillery, laser, miner, repairer, heavy)
-        # 2 - blue team with same types
-        # 3 - Bullets
-        # LAST -  fog of war (not sending)
+
         M = self.PIX_CELL
         self.map_env = np.zeros((self.width, self.height,
                                  4))  # map for input AI players  Layers: 0 - obstacles, 1 - friend team, 2 - enemy`s team, 3 - bullets (because of rockets
@@ -370,9 +391,10 @@ class TankGame():
             obs_x = random.randint(1, self.width-1)
             obs_y = random.randint(1, self.height-1)
             obstacle = self.map_obs_d[random.choice(self.map_obs)]
-            self.map_env[obs_x, obs_y, 0] = obstacle
-            if obstacle > 0.85:
-                self.map_coll[obs_x * M:(obs_x + 1) * M, obs_y * M:(obs_y + 1) * M, 0] = obstacle
+            if self.map_env[obs_x, obs_y, 0] == 0:
+                self.map_env[obs_x, obs_y, 0] = obstacle
+                if obstacle > 0.85:
+                    self.map_coll[obs_x * M:(obs_x + 1) * M, obs_y * M:(obs_y + 1) * M, 0] = obstacle
 
         # Border of map
         self.map_coll[:, 0:M, 0] = 1
@@ -392,13 +414,15 @@ class TankGame():
         y_pos = self.height // 2
         half_x = num_players // 2
         x_pos = np.arange(self.width // 2 - half_x, self.width // 2 - half_x + num_players, 1)
-        print('map', half_x, x_pos)
+
         # dummy possitions
         x_cent = self.width // 2
         y_cent = self.height // 2
-        x_dummy = [x_cent, self.width-3, x_cent, 2]
-        y_dummy = [2, y_cent, self.height-3, y_cent]
-        dir_dummy = [0, 0.75, 0.5, 0.25]
+        x_rand = random.randint(-1, 1)
+        y_rand = random.randint(-1, 1)
+        x_dummy = np.array([x_cent, self.width-4, x_cent, 3]) + x_rand
+        y_dummy = np.array([3, y_cent, self.height-4, y_cent]) + y_rand
+        dir_dummy = np.array([0, 0.75, 0.5, 0.25]) + (np.random.random((4)) - 0.5)
         i_p = 0
         i_d = 0
         for i in range(len(self.team1)):
@@ -417,11 +441,12 @@ class TankGame():
             self.map_env[self.team1[i].X: self.team1[i].X + max(int(self.team1[i].width), 1),
             self.team1[i].Y:self.team1[i].Y + max(1, int(self.team1[i].height)), 1] = self.tank_type_d[self.team1[i].type]
             self.map_coll[self.team1[i].coords_xy[0], self.team1[i].coords_xy[1], 1] = self.team1[i].id_game
+            self.map_env[self.team1[i].X, self.team1[i].Y, 0] = 0  # under tank - plain
 
 
-        x_dummy = [x_cent-2, x_cent+2, self.width-3, self.width-3, x_cent-2, x_cent+2, 2, 2]
-        y_dummy = [2, 2, y_cent-2, y_cent+2, self.height-3, self.height-3, y_cent-2, y_cent+2]
-        dir_dummy = [0, 0.75, 0.5, 0.25]
+        x_dummy = np.array([x_cent-2, x_cent+2, self.width-4, self.width-4, x_cent-2, x_cent+2, 3, 3]) + x_rand
+        y_dummy = np.array([3, 3, y_cent-2, y_cent+2, self.height-4, self.height-4, y_cent-2, y_cent+2]) + y_rand
+        dir_dummy = [0, 0.75, 0.5, 0.25] + (np.random.random((4)) - 0.5)
         #  team 2 to map, layer 2
         for i in range(len(self.team2)):
             self.team2[i].direction_tank = dir_dummy[i//2]
@@ -433,7 +458,7 @@ class TankGame():
             self.map_env[self.team2[i].X: self.team2[i].X + max(int(self.team2[i].width), 1),
             self.team2[i].Y:self.team2[i].Y + max(1, int(self.team2[i].height)), 2] = self.tank_type_d[self.team2[i].type]
             self.map_coll[self.team2[i].coords_xy[0], self.team2[i].coords_xy[1], 1] = self.team2[i].id_game
-
+            self.map_env[self.team2[i].X, self.team2[i].Y, 0] = 0  # under tank - plain
 
 
 

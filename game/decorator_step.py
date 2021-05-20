@@ -30,8 +30,6 @@ def step(self):
     for i in range(len(self.team1)):
         if self.team1[i].hp > 0:
             team1_alive += 1
-            if self.team2[i].name == 'dummy':
-                continue
             idd = self.team1[i].id_game - self.ID_START
             old_xy, old_coords, shot, skill = self.team1[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
@@ -55,8 +53,6 @@ def step(self):
     for i in range(len(self.team2)):
         if self.team2[i].hp > 0:
             team2_alive += 1
-            if self.team2[i].name == 'dummy':
-                continue
             idd = self.team2[i].id_game - self.ID_START
             old_xy, old_coords, shot, skill = self.team2[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps

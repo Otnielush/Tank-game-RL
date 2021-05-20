@@ -172,24 +172,24 @@ def play_video(game, VIDEO):
             pygame.quit()
             return
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                move = 1
-            if event.key == pygame.K_DOWN:
-                move = -1
-            if event.key == pygame.K_LEFT:
-                turn = 1
-            if event.key == pygame.K_RIGHT:
-                turn = -1
-            if event.key == pygame.K_RCTRL or event.key == pygame.K_LCTRL:
-                shot = True
-            if event.key == pygame.K_a:
-                tower = 1
-            if event.key == pygame.K_d:
-                tower = -1
-
-        # for hand control
-        game.connection.send_action(103, [move, turn, tower, shot, False])
+        # if event.type == pygame.KEYDOWN:
+        #     if event.key == pygame.K_UP:
+        #         move = 1
+        #     if event.key == pygame.K_DOWN:
+        #         move = -1
+        #     if event.key == pygame.K_LEFT:
+        #         turn = 1
+        #     if event.key == pygame.K_RIGHT:
+        #         turn = -1
+        #     if event.key == pygame.K_RCTRL or event.key == pygame.K_LCTRL:
+        #         shot = True
+        #     if event.key == pygame.K_a:
+        #         tower = 1
+        #     if event.key == pygame.K_d:
+        #         tower = -1
+        #
+        # # for hand control
+        # game.connection.send_action(103, [move, turn, tower, shot, False])
 
     # DISPLAY.blit(coll_map, (DISPLAY.get_width() // 2, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
@@ -236,7 +236,7 @@ def play_video(game, VIDEO):
 
 def destroy_tank(x, y, width, height, direction):
     global background
-    tank_body = pygame.rotate(pygame.scale(tank_destroyed,
+    tank_body = pygame.transform.rotate(pygame.transform.scale(tank_destroyed,
                 (int(round(width * MULTY_PIXEL_V)), int(round(height * MULTY_PIXEL_V)))), direction * 360 + 180)
     background.blit(tank_body, (x * MULTY_PIXEL_V, y * MULTY_PIXEL_V))
 
