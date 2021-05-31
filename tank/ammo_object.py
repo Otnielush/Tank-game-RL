@@ -76,6 +76,7 @@ class Ammo():
             hit = True
             # TODO not sure about id
             self.damaged_target_id = tar_id.max()
+            self.parent.num_hits += 1
             self.hit()
 
 
@@ -101,6 +102,5 @@ class Ammo():
         self.speed_y = 0
         self.speed = 0
         self.damage_dealed_potencial = max(((self.max_distance-self.distance)/self.max_distance) * self.parent.dmg, 0)
-        self.parent.num_hits += 1
 
 

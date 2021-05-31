@@ -19,7 +19,7 @@ class net_connection():
         # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
         # ammunition; round time left in %
         self.reward_from_server = np.zeros((num_players))
-        self.data_from_server = np.zeros((num_players,) + (1, data_size))
+        self.data_from_server = np.zeros((num_players,) + (1, 1, data_size))
         self.info_from_server = {'game_start': False, 'game_done': False}  # game_start - starting new game; game_done - game finished
 
         self.data_from_players = np.zeros((num_players,) + act_size)
@@ -36,7 +36,7 @@ class net_connection():
     def send_env_to_players(self, id, env, data, reward, info):
         self.reward_from_server[id] = copy(reward)
         self.env_from_server[id] = deepcopy(env)
-        self.data_from_server[id] = np.reshape(data, (1, -1))
+        self.data_from_server[id] = np.reshape(data, (1, 1, -1))
 
         if info is not None:
             for key in info:

@@ -7,30 +7,30 @@ from video import graphics
 
 
 VIDEO = [True]
-ROUNDS = 100
-VIDEO_ROUNDS = [200, 101]
+ROUNDS = 50
+VIDEO_ROUNDS = [0, 1001]
 
 
 
 
 t_type = 'simple'
 
-team1 = [Player.player_RL("RL1t1"), Player.player_RL('RL2t1'), Player.player_RL('RL3t1')]  #, Player.player_AI('Bob')]
-team1[0].change_tank_type(t_type); team1[0].change_id(242)
-team1[1].change_tank_type(t_type); team1[1].change_id(243)
-team1[2].change_tank_type(t_type); team1[2].change_id(244)
+team1 = [Player.player_RL("RL1t2")]; team1[0].change_tank_type(t_type); team1[0].change_id(242)
+team1.append(Player.player_RL('RL2t2')); team1[1].change_tank_type(t_type); team1[1].change_id(243)
+# team1.append(Player.player_RL('RL3t1')); team1[2].change_tank_type(t_type); team1[2].change_id(244)
+# team1.append(Player.player_AI('Bob')])
 
-team2 = [Player.player_RL('RL1t2'), Player.player_RL('RL2t2'), Player.player_RL('RL3t2')]
-team2[0].change_tank_type(t_type); team2[0].change_id(245)
-team2[1].change_tank_type(t_type); team2[1].change_id(246)
-team2[2].change_tank_type(t_type); team2[2].change_id(247)
+team2 = [Player.player_RL("RL1t2")]; team2[0].change_tank_type(t_type); team2[0].change_id(245)
+team2.append(Player.player_RL('RL2t2')); team2[1].change_tank_type(t_type); team2[1].change_id(246)
+# team2.append(Player.player_RL('RL3t2')); team2[2].change_tank_type(t_type); team2[2].change_id(247)
+
 
 
 Game = gg.TankGame(MULTY_PIXEL)
 game_round = 1
-game_type = 'shooting'
-Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO, type_m=game_type)
-# Game.time_round_len = FRAME_RATE*60
+GAME_TYPE = ''  # 'shooting'
+Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO, type_m=GAME_TYPE)
+# Game.time_round_len = FRAME_RATE*30
 print('_______ Round 1 _______')
 
 # FOR TEST
@@ -54,6 +54,7 @@ while True:
         # Game.rewards_to_csv(team1[0].id_game, 'rewards')
         # for training,
         for t in Game.id_tanks:
+            # Game.rewards_to_csv(Game.team1[0].id_game, 'game_rewards')
             Game.id_tanks[t].player.done()
 
         # new Game game_round
@@ -67,10 +68,15 @@ while True:
             VIDEO[0] = False
         time_start = time.time()
         frame = 1
-        Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO, type_m=game_type)
+        # dummies moving after half of rounds
+        if game_round // 2 == ROUNDS:
+            Game.shooting_moving = True
+        Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO, type_m=GAME_TYPE)
         if VIDEO[0]:
             graphics.init_display(Game.width, Game.height)
             graphics.video_build_map(Game)
+        else:
+            graphics.close_window()
         print('\r_______ Round', game_round, '_______')
 
     # players decisions to move

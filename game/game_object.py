@@ -7,6 +7,7 @@ from tank.tank_object import tank_type, Tank
 from net.broadcasting import net_connection
 from options.video import FRAME_RATE
 import pandas as pd
+from player.player_RL import TEAM_SPIRIT
 
 # class for training
 class dummy():
@@ -71,23 +72,26 @@ class TankGame():
         self.steps = 0
 
         # SCORES
-        self.score_win              = 5
-        self.score_lose             = -5
-        self.score_hit              = 1
-        self.score_kill             = 2
-        self.score_dmg              = 0.01
-        self.score_death            = -2
+        self.score_win              = 10
+        self.score_lose             = -10
+        self.score_hit              = 0.5
+        self.score_kill             = 3
+        self.score_dmg              = 0.3
+        self.score_death            = -5
         self.score_kill_assist      = 1
         self.score_exploring        = 1
-        self.score_friendly_fire    = -1
-        self.score_move             = -0.01
-        self.score_shot             = -0.01
+        self.score_friendly_fire    = -3
+        self.score_move             = -0.3
+        self.score_shot             = -0.35
         self.score_take_hit         = self.score_hit * -0.5
         self.score_take_dmg         = self.score_dmg * -1
         self.score_capture          = 0.01
 
         self.data = 0
         self.frame_step = 0
+
+        # training
+        self.shooting_moving = False
 
 
     # start new round with array of connected players [player, ...]
@@ -102,6 +106,8 @@ class TankGame():
         self.frame_step = 0
         self.team1 = []  # [Tank]
         self.team2 = []
+        self.team1_ids = []
+        self.team2_ids = []
         self.id_tanks = {}
         self.game_type = type_m
         self.ID_START = 101
@@ -117,7 +123,7 @@ class TankGame():
             self.width = 15
             num_players_train = len(team1_pl)
             team1_players = np.concatenate((team1_pl, [dummy() for _ in range(4)]), axis=None)
-            team2_players = [dummy(moving=True) for _ in range(8)]
+            team2_players = [dummy(moving=self.shooting_moving) for _ in range(6)]
             self.time_round_len = int(self.time_round_len * 0.5)
         else:
             team1_players = copy(team1_pl)
@@ -135,6 +141,7 @@ class TankGame():
             team1_players[i].games_played += 1
             self.team1[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team1[-1]
+            self.team1_ids.append(id_tank-self.ID_START)
             id_tank += 1
         for i in range(len(team2_players)):
             self.team2.append(Tank(id_tank, team2_players[i], 2, self.PIX_CELL))
@@ -143,6 +150,7 @@ class TankGame():
             team2_players[i].games_played += 1
             self.team2[i].player.connected_new_game(self.connection)
             self.id_tanks[id_tank] = self.team2[-1]
+            self.team2_ids.append(id_tank - self.ID_START)
             id_tank += 1
 
         # (num_players, self.time_round_len, 2))  # {id, step, [reward, comment]}
@@ -157,6 +165,10 @@ class TankGame():
                 tank.reload_ammo /= 4
                 if tank.name == 'dummy':
                     tank.hp = 20
+                else:
+                    tank.sight_range = 20
+                    tank.ammunition = 100
+                    tank.rebuild()
             for tank in self.team2:
                 tank.hp = 20
             self.map_generate_shooting(num_players_train)
@@ -201,6 +213,8 @@ class TankGame():
             map_env = copy(self.map_env[:, :, :4])
             mask = np.ones(map_env.shape[:2])
             for i in range(len(self.team1)):
+                if self.team1[i].name == 'dummy' or self.team1[i].hp <= 0:
+                    continue
                 start_x = max(int(self.team1[i].X - self.team1[i].sight_range), 0)
                 start_y = max(int(self.team1[i].Y - self.team1[i].sight_range), 0)
                 start_x_m = max(int(self.team1[i].sight_range - self.team1[i].X), 0)
@@ -220,7 +234,7 @@ class TankGame():
                 elif end_y - start_y > end_y_m - start_y_m:
                     end_y = start_y + (end_y_m - start_y_m)
 
-                mm = self.team2[i].sight_mask[start_x_m: end_x_m, start_y_m: end_y_m]
+                mm = self.team1[i].sight_mask[start_x_m: end_x_m, start_y_m: end_y_m]
                 mask[start_x: end_x, start_y: end_y] *= mm
 
             mask = (mask - 1) * -1
@@ -231,6 +245,8 @@ class TankGame():
             map_env = copy(self.map_env[:, :, [0, 2, 1, 3]])   # Layers: 1- friendly team, 2 - enemy`s team
             mask = np.ones(map_env.shape[:2])
             for i in range(len(self.team2)):
+                if self.team2[i].name == 'dummy' or self.team2[i].hp <= 0:
+                    continue
                 start_x = max(int(self.team2[i].X - self.team2[i].sight_range), 0)
                 start_y = max(int(self.team2[i].Y - self.team2[i].sight_range), 0)
                 start_x_m = max(int(self.team2[i].sight_range - self.team2[i].X), 0)
@@ -359,7 +375,11 @@ class TankGame():
             id_tank -= self.ID_START
         # if id_tank == 0:
             # print('step:', self.steps, score, '|', comment)
-        self.rewards[id_tank, self.steps] += score
+        self.rewards[id_tank, self.steps] += score * (1 - TEAM_SPIRIT)
+        if id_tank in self.team1_ids:
+            self.rewards[self.team1_ids, self.steps] += score * TEAM_SPIRIT
+        else:
+            self.rewards[self.team2_ids, self.steps] += score * TEAM_SPIRIT
         self.rewards_comment[id_tank, self.steps] += (comment + ',')
 
     # export rewards history
@@ -444,8 +464,10 @@ class TankGame():
             self.map_env[self.team1[i].X, self.team1[i].Y, 0] = 0  # under tank - plain
 
 
-        x_dummy = np.array([x_cent-2, x_cent+2, self.width-4, self.width-4, x_cent-2, x_cent+2, 3, 3]) + x_rand
-        y_dummy = np.array([3, 3, y_cent-2, y_cent+2, self.height-4, self.height-4, y_cent-2, y_cent+2]) + y_rand
+        # x_dummy = np.array([x_cent-2, x_cent+2, self.width-4, self.width-4, x_cent-2, x_cent+2, 3, 3]) + x_rand
+        # y_dummy = np.array([3, 3, y_cent-2, y_cent+2, self.height-4, self.height-4, y_cent-2, y_cent+2]) + y_rand
+        x_dummy = np.array([self.width - 4, self.width - 4, x_cent - 2, x_cent + 2, 3, 3]) + x_rand
+        y_dummy = np.array([y_cent - 2, y_cent + 2, self.height - 4, self.height - 4, y_cent - 2, y_cent + 2]) + y_rand
         dir_dummy = [0, 0.75, 0.5, 0.25] + (np.random.random((4)) - 0.5)
         #  team 2 to map, layer 2
         for i in range(len(self.team2)):

@@ -4,7 +4,7 @@ from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
-t_simple        = [100,   20,       2,              5,             0.8,          30/360,          40/360,     'normal',       10,             7,           2,           50,           6]
+t_simple        = [100,   30,       2,              5,             0.8,          30/360,          40/360,     'normal',       10,             7,           2,           40,           8]
 
 
 class Tank():
@@ -37,8 +37,8 @@ class Tank():
         self.reloading_ammo = 0  # seconds left
         self.reloading_skill = 0
         self.capture_points = 0
-        self.num_hits = 0
         self.num_shots = 0
+        self.num_hits = 0
         self.accuracy = 0  # percent
 
         # Building attributes by tank type
@@ -65,6 +65,11 @@ class Tank():
         atts = self.__dict__
         return 'Tank\n'+'\n'.join([str(x)+': '+str(self.__dict__[x]) for x in atts])
 
+
+    def rebuild(self):
+        self.sight_mask = np.array([[1 if np.sqrt(x ** 2 + y ** 2) > self.sight_range else 0 for x in
+                                     np.arange(-self.sight_range, self.sight_range + 1, 1)] for y in
+                                    np.arange(-self.sight_range, self.sight_range + 1, 1)])
 
     # return coordinates of rotated tank on map from 0
     # TODO now when rotating coordinates is left top corner, need to change to center of object
@@ -163,7 +168,7 @@ class Tank():
         if self.reloading_skill > 0: self.reloading_skill -= tick
         else: self.reloading_skill = 0.0
 
-        if actions[3] and self.reloading_ammo < 0.001:
+        if actions[3] and self.reloading_ammo < 0.001 and self.ammunition > 0:
             self.shot()
         else:
             actions[3] = False

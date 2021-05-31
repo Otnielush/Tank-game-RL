@@ -8,6 +8,8 @@ import pandas as pd
 if __name__ == '__main__': # for test
     class player_obj():
         def __init__(self, name):
+            self.name = name
+        def load_player(self):
             pass
 else:
     from .player_superclass import player_obj
@@ -18,35 +20,39 @@ import numpy as np
 
 # import keras
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate, Input
+from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate, Input, \
+    GlobalAveragePooling2D, LSTM, Reshape, GlobalMaxPool3D, GlobalMaxPool2D
 from tensorflow.keras.optimizers import Adam
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 LEARNING_RATE = 0.001
-ALPHA = 0.39  # renew outputs
 BATCH_SIZE = 256
-TIME_STEP_MEMORY = 3
 
-NUM_EPOCHS = 20
+NUM_EPOCHS = 15
 
-GAMMA = 0.96
+GAMMA = 0.94  # 0.96
+TEAM_SPIRIT = 0.2
+TIME_STEP_MEMORY = 8
 REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
 
-                # RL #
-RANDOM_ACTION_DECAY_FREQ = 10
-RANDOM_ACTION_DECAY = 5
+                # RL
+RANDOM_ACTION_DECAY_FREQ = 40
+ALPHA = 0.39  # renew outputs
+ALPHA_DECAY = 0.01
 INITIAL_RANDOM_ACTION = 90   # percent
+RANDOM_ACTION_DECAY = 5
 
 ENV_INPUT_2D_VIEW = (15, 15, 4)
 # accelerate - 0{-1:1}, turn_body - 1{-1:1}, turn_tower - 2{-1:1}, shot - 3{Boolean}, skill - 4{Boolean}
-# 1: -> (9) [-1.  , -0.75, -0.5 , -0.25,  0.  ,  0.25,  0.5 ,  0.75,  1.  ]
-# 2: -> (9) ...
-# 3: -> (9) ...
+NUM_SPEEDS = 7
+# 1: -> (7) [-1.  , -0.66, -0.33,  0.,  0.33 ,  0.66,  1.  ]
+# 2: -> (7) ...
+# 3: -> (7) ...
 # 4: -> (2) [0, 1]
 # 5: -> (2) ...
-ACTIONS_DIM = 31
-Action_dict = {x: np.linspace(-1, 1, 9)[x] for x in range(9)}
+ACTIONS_DIM = 25
+Action_dict = {x: np.linspace(-1, 1, NUM_SPEEDS)[x] for x in range(NUM_SPEEDS)}
 NUM_ACTIONS = 5
 
 # data:  (10, 1) # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
@@ -65,6 +71,8 @@ class player_RL(player_obj):
         self.old_observation = (0, 0, 0)
         self.env_2d_view = 0
         self.old_action = 0
+        self.prediction = 0
+        self.old_prediction = 0
         self.random_move = INITIAL_RANDOM_ACTION  # percent of random choiced move
         self.games_to_rnd_decr = RANDOM_ACTION_DECAY_FREQ
         self.games_to_derc = self.games_to_rnd_decr
@@ -74,11 +82,13 @@ class player_RL(player_obj):
 
     def done(self):
         super(player_RL, self).done()
+        global ALPHA
         if self.random_move > 10:
             self.games_to_derc -= 1
         if self.games_to_derc <= 0:
             self.games_to_derc = self.games_to_rnd_decr
             self.random_move -= RANDOM_ACTION_DECAY
+            ALPHA -= ALPHA_DECAY
             print(self.name, 'random move:', self.random_move)
         print(self.name, 'game done.', end='')
         # training
@@ -97,6 +107,7 @@ class player_RL(player_obj):
 
     def move(self):
         self.old_observation = [deepcopy(self.env_2d_view), deepcopy(self.data)]
+        self.old_prediction = deepcopy(self.prediction)
         self.env, self.data, self.reward, self.info = self.connection.get_env_from_server(self.id_game)
 
         # taking actions from model
@@ -104,23 +115,24 @@ class player_RL(player_obj):
         action_indexes, action = self.action_function_RL()
 
         # saving data for training
-        self.replay_buffer.add(self.old_observation, self.old_action, self.reward, (deepcopy(self.env_2d_view), deepcopy(self.data)))
+        self.replay_buffer.add(self.old_observation, self.old_prediction, self.old_action, self.reward,
+                               (deepcopy(self.env_2d_view), deepcopy(self.data)), deepcopy(self.prediction))
         self.old_action = copy(action_indexes)
         self.connection.send_action(self.id_game, action)
 
 
     def action_function_RL(self):
         self.env_prepare_2d()
-        # array (31, 1)
+        # array (25, 1)
         # RANDOM MOVE!
         if randint(0, 100) < self.random_move:
-            args = [randint(0, 8), randint(9, 17), randint(18, 26), randint(27, 28), randint(29, 30)]
-            return args, [Action_dict[args[0]], Action_dict[args[1]-9], Action_dict[args[2]-18], args[3]-27, args[4]-29]
+            args = [randint(0, 6), randint(7, 13), randint(14, 20), randint(21, 22), randint(23, 24)]
+            return args, [Action_dict[args[0]], Action_dict[args[1]-NUM_SPEEDS], Action_dict[args[2]-NUM_SPEEDS*2],
+                          args[3]-NUM_SPEEDS*3, args[4]-(NUM_SPEEDS*3+2)]
         # preparing 2d map view
-
-        predictions = self.model.predict([self.env_2d_view, self.data], batch_size=1)[0]
+        self.prediction = self.model.predict([self.env_2d_view, self.data], batch_size=1)[0]
         # decoding into [-1: 1] and Boolean
-        return action_decoder(predictions)
+        return action_decoder(self.prediction)
 
 
     # need: env_map, position of tank (x,y), starting side of map
@@ -170,35 +182,34 @@ class player_RL(player_obj):
         # self.model.save(folder)
 
 
-
 # from outputs of NN we take 3 choises
 def action_decoder(acts):
-    args = [0 for _ in range(5)]
-    args[0] = argmax(acts[:9])
-    args[1] = argmax(acts[9:18]) + 9
-    args[2] = argmax(acts[18:27]) + 18
-    args[3] = argmax(acts[27:29]) + 27
-    args[4] = argmax(acts[29:]) + 29
-    return args, [Action_dict[args[0]], Action_dict[args[1]-9], Action_dict[args[2]-18], args[3]-27, args[4]-29]
+    args = [0 for _ in range(NUM_ACTIONS)]
+    args[0] = argmax(acts[:7])
+    args[1] = argmax(acts[7:14]) + 7
+    args[2] = argmax(acts[14:21]) + 14
+    args[3] = argmax(acts[21:23]) + 21
+    args[4] = argmax(acts[23:]) + 23
+    return args, [Action_dict[args[0]], Action_dict[args[1]-7], Action_dict[args[2]-14], args[3]-21, args[4]-23]
 
 def action_decoder_reward(acts):
     args = np.zeros((NUM_ACTIONS), dtype='int32')
-    args[0] = argmax(acts[:9])
-    args[1] = argmax(acts[9:18]) + 9
-    args[2] = argmax(acts[18:27]) + 18
-    args[3] = argmax(acts[27:29]) + 27
-    args[4] = argmax(acts[29:]) + 29
+    args[0] = argmax(acts[:7])
+    args[1] = argmax(acts[7:14]) + 7
+    args[2] = argmax(acts[14:21]) + 14
+    args[3] = argmax(acts[21:23]) + 21
+    args[4] = argmax(acts[23:]) + 23
     rewards = np.zeros((ACTIONS_DIM))
     rewards[args] = acts[args]
     return rewards
 
 def action_decoder_reward2(acts):
     reward = 0
-    reward += acts[argmax(acts[:9])]
-    reward += acts[argmax(acts[9:18]) + 9]
-    reward += acts[argmax(acts[18:27]) + 18]
-    reward += acts[argmax(acts[27:29]) + 27]
-    reward += acts[argmax(acts[29:]) + 29]
+    reward += acts[argmax(acts[:7])]
+    reward += acts[argmax(acts[7:14]) + 7]
+    reward += acts[argmax(acts[14:21]) + 14]
+    reward += acts[argmax(acts[21:23]) + 21]
+    reward += acts[argmax(acts[23:]) + 23]
     return reward
 
 
@@ -210,10 +221,10 @@ class ReplayBuffer():
         self.buffer = deque()
 
     # env + data = observation
-    def add(self, observation, action, reward, observation_new):
+    def add(self, observation, prediction, action, reward, observation_new, prediction_new):
         if len(self.buffer) > self.max_size:
             self.buffer.popleft()
-        self.buffer.append((observation, action, reward, observation_new))
+        self.buffer.append((observation, prediction, action, reward, observation_new, prediction_new))
 
     # def sample(self, count):
     #     # taking a random part of buffer
@@ -229,25 +240,41 @@ class ReplayBuffer():
     def clear(self):
         self.buffer = deque()
 
-
-def build_model():
+# https://stackoverflow.com/questions/44778439/keras-tf-time-distributed-cnnlstm-for-visual-recognition/47604360
+# https://stackoverflow.com/questions/65148117/how-to-use-timedistributed-layer-with-concatenate-in-tensorflow
+def build_model(for_train=False):
     # map: (15, 15, 4)
     # data:  (10, 1) # 10: x, y, angle_tank, angle_tower, hp, speed, (time to reload: ammo, skill);
     # ammunition; round time left in %
 
-    input1 = Input(shape=ENV_INPUT_2D_VIEW, name='map_env')
-    input2 = Input(shape=(DATA_DIM,), name='data')
-    conv1 = Convolution2D(6, (3, 3), strides=(1), activation='relu')(input1)
-    conv1 = MaxPool2D((2, 2))(conv1)
-    conv2 = Convolution2D(8, (3, 3), strides=(1), activation='relu')(conv1)
-    conv2 = MaxPool2D((2, 2))(conv2)
-    fl = Flatten()(conv2)
-    conc = Concatenate(axis=1)([fl, input2])
-    dr = Dropout(0.25)(conc)
-    denc = Dense(30, activation='relu')(dr)
-    denc = Dense(30, activation='relu')(denc)
-    denc = Dense(30, activation='relu')(denc)
-    # (31)
+    # stateless
+    if for_train:
+        inp_shape = (TIME_STEP_MEMORY,)
+        Statefull = False
+
+        input1 = tf.keras.layers.Input(shape=inp_shape + ENV_INPUT_2D_VIEW, name='map_env')
+        cnn = tf.keras.layers.Conv2D(6, 3, activation='relu')
+        conv = tf.keras.layers.TimeDistributed(cnn)(input1)
+        pool = tf.keras.layers.MaxPooling2D(3)
+        conv = tf.keras.layers.TimeDistributed(pool)(conv)
+        conc = tf.keras.layers.Reshape((TIME_STEP_MEMORY, -1))(conv)
+
+        input2 = tf.keras.layers.Input(shape=inp_shape + (DATA_DIM,), name='data')
+
+    # stateful
+    else:
+        inp_shape = (1,)
+        Statefull = True
+        input1 = tf.keras.layers.Input(batch_input_shape=inp_shape + ENV_INPUT_2D_VIEW, name='map_env')
+        conv = tf.keras.layers.Conv2D(6, 3, activation='relu')(input1)
+        conv = tf.keras.layers.MaxPooling2D(3)(conv)
+        conc = tf.keras.layers.Reshape((1, -1))(conv)
+        input2 = tf.keras.layers.Input(batch_input_shape=inp_shape + (1,) + (DATA_DIM,), name='data')
+
+    conc = tf.keras.layers.Concatenate(axis=2)([conc, input2])
+    denc = LSTM(30, return_sequences=False, stateful=Statefull)(conc)
+    denc = Dense(40, activation='relu')(denc)
+    # (25)
     out = Dense(ACTIONS_DIM, activation='linear')(denc)
 
     model = tf.keras.Model(inputs=[input1, input2], outputs=out)
@@ -258,61 +285,24 @@ def build_model():
 
     model.compile(
         optimizer=Adam(lr=LEARNING_RATE),
-        loss='mse',
-        metrics=['accuracy'],
+        loss='mae',
+                metrics=['accuracy'],
     )
     # print(model.summary())
+    #     tf.keras.utils.plot_model(model, "model1.png", show_shapes=False)
     return model
+
 
 # 1. taking predictions from old observation
 # 2. adding reward from next observation
 # 3. training
 # calculating rewards for train
-def update_action(action_model, sample_transitions, decoder=None):
-    buf_size = len(sample_transitions)-1
-    env_2d_obs = np.zeros( (buf_size,) + ENV_INPUT_2D_VIEW )
-    data_obs = np.zeros( (buf_size, DATA_DIM) )
-    batch_targets = []
-    first = True
-    i = 0
-    print(' Data prep: 00%', end='')
-    for sample_transition in sample_transitions:  # first is 0
-        print('\b\b\b\b{:3.0f}%'.format(i/buf_size*100), end='')
-        if first:
-            first = False
-            continue
-        old_observation, actions, reward, observation = sample_transition
-
-        # TODO stopped here. Training
-        targets = get_q(action_model, old_observation)[0]
-        next_step = 0
-        if observation is not None:
-            predictions = get_q(action_model, observation)[0]
-            # for complex models
-            if decoder:
-                new_action, _ = decoder(predictions)
-                next_step = GAMMA * sum(predictions[new_action])
-            else:
-                new_action = np.argmax(predictions)
-                next_step = GAMMA * predictions[new_action]
-
-        targets[actions] = ((reward + next_step) / NUM_ACTIONS) * ALPHA + targets[actions] * (1 - ALPHA)
-        env_2d_obs[i] = deepcopy(old_observation[0][0])
-        data_obs[i] = deepcopy(old_observation[1][0])
-        batch_targets.append(targets)
-        i += 1
-    print('. Training', end='')
-    # prepare dataset for RNN
-    # batch_obs_rnn = make_trainset_for_rnn(batch_observations, TIME_STEP_MEMORY)
-
-    return train(action_model, [env_2d_obs, data_obs], batch_targets)
-
 def update_action_vect(action_model, sample_transitions, decoder=None, save_targets=False):
     buf_size = len(sample_transitions)-1
     ds_env_2d = np.zeros( (buf_size,) + ENV_INPUT_2D_VIEW )
     ds_data = np.zeros( (buf_size, DATA_DIM) )
     ds_actions = np.zeros( (buf_size, NUM_ACTIONS), dtype='int32')
-    # ds_targets = np.zeros( (buf_size, ACTIONS_DIM) )
+    ds_targets = np.zeros( (buf_size, ACTIONS_DIM) )
     ds_rewards = np.zeros( (buf_size, ACTIONS_DIM) )
     ds_next_step = np.zeros( (buf_size, ACTIONS_DIM) )
     ds_env_2d_new = np.zeros( (buf_size,) + ENV_INPUT_2D_VIEW )
@@ -327,20 +317,28 @@ def update_action_vect(action_model, sample_transitions, decoder=None, save_targ
         if first:
             first = False
             continue
-        old_observation, actions, reward, observation = sample_transition
+        old_observation, old_prediction, actions, reward, observation, prediction = sample_transition
 
         ds_env_2d[i] = deepcopy(old_observation[0][0])
         ds_data[i] = deepcopy(old_observation[1][0])
         ds_actions[i] = deepcopy(actions)
         ds_rewards[i, actions] = reward / NUM_ACTIONS
+        ds_targets[i] = deepcopy(old_prediction)
         if observation is not None:
             ds_env_2d_new[i] = deepcopy(observation[0][0])
             ds_data_new[i] = deepcopy(observation[1][0])
+            ds_next_step[i] = deepcopy(prediction)
         i += 1
 
     print('. Reward calc.', end='')
-    ds_targets = action_model.predict([ds_env_2d, ds_data])
-    ds_next_step = action_model.predict([ds_env_2d_new, ds_data_new])
+    # ds_targets = action_model.predict([ds_env_2d, ds_data])
+    # ds_next_step = action_model.predict([ds_env_2d_new, ds_data_new])
+
+    # dataset check
+    # for xx in ds_targets:
+        # print(xx[:10].round(3))
+    # save_rewards('RL1t1', ds_targets, 'targets_before')
+    # save_rewards('RL1t1', ds_targets, 'targets_next')
 
     for i in range(len(ds_targets)):
         ds_targets[i, ds_actions[i]] *= (1 - ALPHA)
@@ -349,11 +347,22 @@ def update_action_vect(action_model, sample_transitions, decoder=None, save_targ
     ds_rewards = ds_rewards * ALPHA
     ds_targets = ds_targets + ds_rewards
 
-    print('Training', end='')
+    # save_rewards('RL1t1', ds_targets, 'targets_after')
     # prepare dataset for RNN
-    # batch_obs_rnn = make_trainset_for_rnn(batch_observations, TIME_STEP_MEMORY)
+    # print('DS rnn 1', end='')
+    ds_env_2d = make_trainset_for_rnn(ds_env_2d, TIME_STEP_MEMORY)
+    # print(' 2.', end='')
+    ds_data = make_trainset_for_rnn(ds_data, TIME_STEP_MEMORY)
 
-    return train(action_model, [ds_env_2d, ds_data], ds_targets)
+    # print('P:',action_model.predict([ds_env_2d[0,:1], ds_data[0:1,:1]]), end=',')
+    # model for training
+    train_model = build_model(True)
+    train_model.set_weights(action_model.get_weights())
+    print('Training', end='')
+    acc = train(train_model, [ds_env_2d, ds_data], ds_targets)
+    action_model.set_weights(train_model.get_weights())
+    # print('T:', action_model.predict([ds_env_2d[0, :1], ds_data[0:1, :1]]))
+    return acc
 
 
 def make_trainset_for_rnn(env_ds, time_step):
@@ -379,7 +388,7 @@ def train(model, observations, targets):
     np_targets = np.reshape(targets, [-1, ACTIONS_DIM])
 
     # model.reset_states()  # need for LSTM
-    acc = model.fit(observations, np_targets, epochs=NUM_EPOCHS, verbose=0, batch_size=BATCH_SIZE, shuffle=False)
+    acc = model.fit(observations, np_targets, epochs=NUM_EPOCHS, verbose=0, shuffle=False)
     acc = int(acc.history['accuracy'][-1] * 100) / 100
     # model.reset_states()  # need for LSTM
 
@@ -394,11 +403,16 @@ def predict(model, observation):
     action = np.argmax(model.predict(np_obs, batch_size=1))
     return action
 
-
 # take outputs for training
 def get_q(model, observation):
     return model.predict(observation, batch_size=1)
 
+# save rewards
+def save_rewards(tank_name, data, file_name):
+    folder = './/player//players data//' + tank_name + '//'
+    df = pd.DataFrame(data, columns=[str(x+1) for x in range(31)])
+    df.to_csv(folder+file_name+'.csv', index=None)
+    del(df)
 
 class Tankk():
     def __init__(self, x, y):
@@ -407,14 +421,13 @@ class Tankk():
 
 
 if __name__ == '__main__':
-    # model = build_model()
-    tt = np.random.random((31))
-    print(tt)
-    print(action_decoder_reward(tt))
-
+    model = build_model()
+    model.summary()
+    model = build_model(True)
+    model.summary()
     exit()
-    pl = player_RL('ttt')
-    pl.env = np.random.random((12, 10, 4))
+    pl = player_RL('RL1t1')
+    pl.env = np.random.random((12, 12, 4))
     pl.tank_ingame = Tankk(2, 4)
     pl.start_side = 'up'
     pl.data = np.random.random((1,10))
@@ -424,5 +437,13 @@ if __name__ == '__main__':
     print(act)
     print(pl.data.shape)
     print(pl.env_2d_view.shape)
-    print(pl.data)
+
+
+    ds_env_2d = np.random.random((10,15,15,4))
+    ds_data = np.random.random((10,10))
+    ds_targets = pl.model.predict([ds_env_2d, ds_data])
+    print(ds_targets)
+
+
+
 

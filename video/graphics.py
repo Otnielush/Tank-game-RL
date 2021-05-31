@@ -243,3 +243,7 @@ def destroy_tank(x, y, width, height, direction):
 def destroy_wall(x, y):
     global background
     background.blit(land, (int(x) * MULTY_PIXEL_V, int(y) * MULTY_PIXEL_V))
+
+def close_window():
+    if pygame.display.get_init:
+        pygame.quit()

@@ -33,7 +33,7 @@ def step(self):
             idd = self.team1[i].id_game - self.ID_START
             old_xy, old_coords, shot, skill = self.team1[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team1[i], 1, old_xy, old_coords)  # changing maps
-            self.reward(idd, self.score_move, 'move')
+            self.reward(idd, self.score_move * self.team1[i].speed, 'move')
             # capture points
             if (((self.team1[i].coords_xy[0] >= self.map_base_xy[1, 0, 0]) & (self.team1[i].coords_xy[0] <= self.map_base_xy[1, 0, 1]))
             & ((self.team1[i].coords_xy[1] >= self.map_base_xy[1, 1, 0]) & (self.team1[i].coords_xy[1] <= self.map_base_xy[1, 1, 1]))).any():
@@ -56,7 +56,7 @@ def step(self):
             idd = self.team2[i].id_game - self.ID_START
             old_xy, old_coords, shot, skill = self.team2[i].move(self.map_coll, self.data[idd])
             self.move_obj_on_maps(self.team2[i], 2, old_xy, old_coords)  # changing maps
-            self.reward(idd, self.score_move, 'move')
+            self.reward(idd, self.score_move * self.team2[i].speed, 'move')
             # capture points
             if (((self.team2[i].coords_xy[0] >= self.map_base_xy[0, 0, 0]) & (self.team2[i].coords_xy[0] <= self.map_base_xy[0, 0, 1]))
                 & ((self.team2[i].coords_xy[1] >= self.map_base_xy[0, 1, 0]) & (self.team2[i].coords_xy[1] <= self.map_base_xy[0, 1, 1]))).any():

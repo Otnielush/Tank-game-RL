@@ -19,6 +19,7 @@
 # TODO pushing tanks from obstacles. Difficult to go around
 
 
+# TODO cooperate Q learning - QMIX https://www.youtube.com/watch?v=W_Y2pE0mniY&list=WL&index=52&t=1232s
 
 
 # TODO Algorithms to use:
