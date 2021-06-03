@@ -80,10 +80,13 @@ def step(self):
         old_xy, old_coords, hit = self.bullets[i].move(self.map_coll)
 
         if hit:
+            # laser life time check
+            if self.bullets[i].life_time <= 1:
+                self.bullets_in_act.remove(self.bullets[i].id_game - 200)
             # check if tank damaged
             if self.bullets[i].damaged_target_id > 100:
                 # move from array to new array
-                self.bullets_in_act.remove(self.bullets[i].id_game - 200)
+
                 # calculate angle of hitting target, angle 0 - down; 0.5 - up
 
                 angle_diff = self.id_tanks[self.bullets[i].damaged_target_id].direction_tank - self.bullets[i].angle
@@ -170,7 +173,6 @@ def step(self):
             # obstacles hit
             # if its wall -> broke or calc hp
             else:
-                self.bullets_in_act.remove(self.bullets[i].id_game - 200)
                 # if its wall and bullet type can destroy
                 if self.bullets[i].damaged_target_id == self.map_obs_d['wall'] and self.bullets[i].destroy:
                     # erase wall from map
@@ -187,7 +189,7 @@ def step(self):
 
             # erasing bullet from maps
             try:
-                self.map_env[old_xy[0], old_xy[1], 3] = 0
+                self.map_env[int(old_xy[0]), int(old_xy[1]), 3] = 0
             except:
                 print('problem bullet', self.bullets[i])
 

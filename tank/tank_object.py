@@ -4,7 +4,8 @@ from copy import copy
 
 tank_type       = ['none', 'miner', 'freezer', 'artillery', 'laser', 'simple', 'tesla', 'repairer', 'heavy', 'base']
 tank_features   = ['hp', 'dmg', 'reload_ammo', 'reload_skill', 'max_speed', 'speed_turn', 'speed_tower', 'ammo_type', 'armor_front', 'armor_side', 'armor_back', 'ammunition', 'sight_range']
-t_simple        = [100,   30,       2,              5,             0.8,          30/360,          40/360,     'normal',       10,             7,           2,           40,           8]
+t_simple        = [100,   30,       3,              5,             0.8,          30/360,          40/360,     'normal',       10,             7,           2,           40,           8]
+t_laser         = [100,   20,       6,              5,             0.7,          30/360,          30/360,      'laser',       8,              4,           2,           30,           7]
 
 
 class Tank():
@@ -42,7 +43,8 @@ class Tank():
         self.accuracy = 0  # percent
 
         # Building attributes by tank type
-        for (key, value) in zip(tank_features, t_simple):
+        tank_stats = globals()['t_'+self.type]
+        for (key, value) in zip(tank_features, tank_stats):
             self.__dict__[key] = value
 
         self.max_speed /= FRAME_RATE

@@ -160,6 +160,7 @@ class TankGame():
         self.rewards = np.zeros((num_players, self.time_round_len))
         self.rewards_comment = np.zeros((num_players, self.time_round_len), dtype='<U30')
 
+        # attributes by game type
         if type_m == 'shooting':
             for tank in self.team1:
                 tank.reload_ammo /= 4
@@ -167,7 +168,7 @@ class TankGame():
                     tank.hp = 20
                 else:
                     tank.sight_range = 20
-                    tank.ammunition = 100
+                    tank.ammunition *= 2
                     tank.rebuild()
             for tank in self.team2:
                 tank.hp = 20
@@ -301,7 +302,11 @@ class TankGame():
         # Adding obstacles randomly on map. 2 lines from team sides is free (land)
         for y in np.arange(3, self.height - 3, 1):
             for x in np.arange(1, self.width-1, 1):
-                obstacle = self.map_obs_d[random.choice(self.map_obs)]
+                # 50% land 50% random obstacle
+                if random.randint(0, 9) > 4:
+                    obstacle = self.map_obs_d[random.choice(self.map_obs)]
+                else:
+                    obstacle = 0  # Land
                 # self.map[x*M:(x+1)*M, y*M:(y+1)*M, 0] = obstacle
                 self.map_env[x, y, 0] = obstacle
                 if obstacle > 0.85:

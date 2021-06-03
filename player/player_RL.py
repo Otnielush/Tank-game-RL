@@ -21,24 +21,24 @@ import numpy as np
 # import keras
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Dropout, Convolution2D, MaxPool2D, Flatten, Concatenate, Input, \
-    GlobalAveragePooling2D, LSTM, Reshape, GlobalMaxPool3D, GlobalMaxPool2D
+    GlobalAveragePooling2D, LSTM, Reshape, GRU
 from tensorflow.keras.optimizers import Adam
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 LEARNING_RATE = 0.001
-BATCH_SIZE = 256
+BATCH_SIZE = 400
 
 NUM_EPOCHS = 15
 
-GAMMA = 0.94  # 0.96
+GAMMA = 0.9  # 0.96
 TEAM_SPIRIT = 0.2
-TIME_STEP_MEMORY = 8
+TIME_STEP_MEMORY = 15
 REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
 
                 # RL
-RANDOM_ACTION_DECAY_FREQ = 40
-ALPHA = 0.39  # renew outputs
+RANDOM_ACTION_DECAY_FREQ = 100
+ALPHA = 0.5  # renew outputs
 ALPHA_DECAY = 0.01
 INITIAL_RANDOM_ACTION = 90   # percent
 RANDOM_ACTION_DECAY = 5
@@ -272,7 +272,7 @@ def build_model(for_train=False):
         input2 = tf.keras.layers.Input(batch_input_shape=inp_shape + (1,) + (DATA_DIM,), name='data')
 
     conc = tf.keras.layers.Concatenate(axis=2)([conc, input2])
-    denc = LSTM(30, return_sequences=False, stateful=Statefull)(conc)
+    denc = GRU(30, return_sequences=False, stateful=Statefull)(conc)
     denc = Dense(40, activation='relu')(denc)
     # (25)
     out = Dense(ACTIONS_DIM, activation='linear')(denc)

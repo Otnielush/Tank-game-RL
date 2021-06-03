@@ -7,21 +7,22 @@ from video import graphics
 
 
 VIDEO = [True]
-ROUNDS = 50
+ROUNDS = 300
 VIDEO_ROUNDS = [0, 1001]
 
 
 
 
-t_type = 'simple'
+t_type = 'laser'  #'simple', 'laser'
 
-team1 = [Player.player_RL("RL1t2")]; team1[0].change_tank_type(t_type); team1[0].change_id(242)
-team1.append(Player.player_RL('RL2t2')); team1[1].change_tank_type(t_type); team1[1].change_id(243)
+team1 = []
+team1 = [Player.player_RL("RL1t1l")]; team1[0].change_tank_type(t_type); team1[0].change_id(242)
+team1.append(Player.player_RL('RL2t1l')); team1[1].change_tank_type(t_type); team1[1].change_id(243)
 # team1.append(Player.player_RL('RL3t1')); team1[2].change_tank_type(t_type); team1[2].change_id(244)
-# team1.append(Player.player_AI('Bob')])
+# team1.append(Player.player_AI('Bob')); team1[0].change_tank_type(t_type); team1[0].change_id(1000)
 
-team2 = [Player.player_RL("RL1t2")]; team2[0].change_tank_type(t_type); team2[0].change_id(245)
-team2.append(Player.player_RL('RL2t2')); team2[1].change_tank_type(t_type); team2[1].change_id(246)
+team2 = [Player.player_RL("RL1t2l")]; team2[0].change_tank_type(t_type); team2[0].change_id(245)
+team2.append(Player.player_RL('RL2t2l')); team2[1].change_tank_type(t_type); team2[1].change_id(246)
 # team2.append(Player.player_RL('RL3t2')); team2[2].change_tank_type(t_type); team2[2].change_id(247)
 
 
