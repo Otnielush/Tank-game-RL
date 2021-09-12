@@ -157,8 +157,8 @@ class TankGame():
         # self.rewards = [[[0, '']
         #                  for _ in range(self.time_round_len)]
         #                 for _ in range(num_players)]
-        self.rewards = np.zeros((num_players, self.time_round_len))
-        self.rewards_comment = np.zeros((num_players, self.time_round_len), dtype='<U30')
+        self.rewards = np.zeros((num_players, self.time_round_len+5))
+        self.rewards_comment = np.zeros((num_players, self.time_round_len+5), dtype='<U30')
 
         # attributes by game type
         if type_m == 'shooting':

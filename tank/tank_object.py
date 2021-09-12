@@ -92,6 +92,12 @@ class Tank():
             turn_tower /= 360
         self.direction_tank += (turn_body * self.speed_turn)
         self.direction_tower += (turn_tower * self.speed_tower)
+        # turning tower limit 90°
+        if 0.25 < self.direction_tower < 0.5:
+            self.direction_tower = 0.25
+        elif 0.75 > self.direction_tower > 0.5:
+            self.direction_tower = 0.75
+
         if self.direction_tank > 1:
             self.direction_tank -= 1
         elif self.direction_tank < 0:

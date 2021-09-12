@@ -31,16 +31,16 @@ BATCH_SIZE = 400
 
 NUM_EPOCHS = 15
 
-GAMMA = 0.9  # 0.96
+GAMMA = 0.5  # 0.96
 TEAM_SPIRIT = 0.2
-TIME_STEP_MEMORY = 15
+TIME_STEP_MEMORY = 10
 REPLAY_MEMORY_SIZE = 5*60*20/2  # 3000
 
                 # RL
 RANDOM_ACTION_DECAY_FREQ = 100
 ALPHA = 0.5  # renew outputs
 ALPHA_DECAY = 0.01
-INITIAL_RANDOM_ACTION = 90   # percent
+INITIAL_RANDOM_ACTION = 0   # percent
 RANDOM_ACTION_DECAY = 5
 
 ENV_INPUT_2D_VIEW = (15, 15, 4)
@@ -289,7 +289,7 @@ def build_model(for_train=False):
                 metrics=['accuracy'],
     )
     # print(model.summary())
-    #     tf.keras.utils.plot_model(model, "model1.png", show_shapes=False)
+    # tf.keras.utils.plot_model(model, "model1.png", show_shapes=False)
     return model
 
 

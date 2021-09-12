@@ -238,7 +238,7 @@ def step(self):
             self.reward(t.id_game - self.ID_START, self.score_lose, 'lose')
 
     # Draw: all dead or time gone
-    if win_draw or self.time_passed > self.time_round_len:
+    if win_draw or self.time_passed >= self.time_round_len:
         info = {'game_done': True}
         done = True
         # rewards

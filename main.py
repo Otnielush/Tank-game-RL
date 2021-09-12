@@ -7,29 +7,29 @@ from video import graphics
 
 
 VIDEO = [True]
-ROUNDS = 300
+ROUNDS = 50
 VIDEO_ROUNDS = [0, 1001]
 
 
 
 
-t_type = 'laser'  #'simple', 'laser'
+t_type = 'laser'  #'simple','laser'
 
 team1 = []
-team1 = [Player.player_RL("RL1t1l")]; team1[0].change_tank_type(t_type); team1[0].change_id(242)
-team1.append(Player.player_RL('RL2t1l')); team1[1].change_tank_type(t_type); team1[1].change_id(243)
+team1 = [Player.player_RL("RL1t1ml")]; team1[0].change_tank_type(t_type); team1[0].change_id(242)
+team1.append(Player.player_RL('RL2t1ml')); team1[1].change_tank_type('simple'); team1[1].change_id(243)
 # team1.append(Player.player_RL('RL3t1')); team1[2].change_tank_type(t_type); team1[2].change_id(244)
-# team1.append(Player.player_AI('Bob')); team1[0].change_tank_type(t_type); team1[0].change_id(1000)
+# team1.append(Player.player_AI('Bob')); team1[2].change_tank_type('simple'); team1[2].change_id(1000)
 
-team2 = [Player.player_RL("RL1t2l")]; team2[0].change_tank_type(t_type); team2[0].change_id(245)
-team2.append(Player.player_RL('RL2t2l')); team2[1].change_tank_type(t_type); team2[1].change_id(246)
+team2 = [Player.player_RL("RL1t2ml")]; team2[0].change_tank_type(t_type); team2[0].change_id(245)
+team2.append(Player.player_RL('RL2t2ml')); team2[1].change_tank_type('simple'); team2[1].change_id(246)
 # team2.append(Player.player_RL('RL3t2')); team2[2].change_tank_type(t_type); team2[2].change_id(247)
 
 
 
 Game = gg.TankGame(MULTY_PIXEL)
 game_round = 1
-GAME_TYPE = ''  # 'shooting'
+GAME_TYPE = 'shooting'  # 'shooting'
 Game.new_game(WIDTH, HEIGHT, team1, team2, VIDEO, type_m=GAME_TYPE)
 # Game.time_round_len = FRAME_RATE*30
 print('_______ Round 1 _______')
@@ -44,6 +44,10 @@ frame = 1
 if VIDEO[0]:
     graphics.init_display(Game.width, Game.height)
     graphics.video_build_map(Game)
+
+import tensorflow as tf
+tf.keras.utils.plot_model(Game.team1[0].player.model, "model2.png", show_shapes=True)
+
 
 done = False
 while True:
@@ -92,6 +96,8 @@ while True:
         graphics.play_video(Game, VIDEO)
 
     print('\rFPS', round(frame/(time.time()-time_start+0.1), 1), end='')
+    # for ii in range(len(Game.team1)):
+    #     print(Game.team1[ii].id_game, Game.team1[ii].name)
 
     # print('\rspeed:', round(Game.team1[0].speed, 3), 'FPS:', round(frame/(time.time()-time_passed), 1),
           # 'xy:',round(Game.team1[0].X,1), round(Game.team1[0].Y,1), end=' |')

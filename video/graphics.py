@@ -98,10 +98,10 @@ def init_display(WIDTH, HEIGHT):
     tank_height = 1 * MULTY_PIXEL_V
     # img_tank_base = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank.png')), (tank_width, tank_height))
     # img_tank_tower = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tank_tower.png')), (round(tower_width), round(tower_height)))
-    img_tank_base_red = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
+    img_tank_base_red = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase2.png')),
                                            (tank_width, tank_height))
     img_tank_base_red.fill((100, 0, 0, 1), special_flags=pygame.BLEND_ADD)
-    img_tank_base_blue = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase.png')),
+    img_tank_base_blue = pygame.transform.scale(pygame.image.load(os.path.join('video', 'pics', 'tankBase2.png')),
                                            (tank_width, tank_height))
     img_tank_base_blue.fill((0, 0, 100, 1), special_flags=pygame.BLEND_ADD)
 
@@ -172,24 +172,24 @@ def play_video(game, VIDEO):
             pygame.quit()
             return
 
-        # if event.type == pygame.KEYDOWN:
-        #     if event.key == pygame.K_UP:
-        #         move = 1
-        #     if event.key == pygame.K_DOWN:
-        #         move = -1
-        #     if event.key == pygame.K_LEFT:
-        #         turn = 1
-        #     if event.key == pygame.K_RIGHT:
-        #         turn = -1
-        #     if event.key == pygame.K_RCTRL or event.key == pygame.K_LCTRL:
-        #         shot = True
-        #     if event.key == pygame.K_a:
-        #         tower = 1
-        #     if event.key == pygame.K_d:
-        #         tower = -1
-        #
-        # # for hand control
-        # game.connection.send_action(101, [move, turn, tower, shot, False])
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                move = 1
+            if event.key == pygame.K_DOWN:
+                move = -1
+            if event.key == pygame.K_LEFT:
+                turn = 1
+            if event.key == pygame.K_RIGHT:
+                turn = -1
+            if event.key == pygame.K_RCTRL or event.key == pygame.K_LCTRL:
+                shot = True
+            if event.key == pygame.K_a:
+                tower = 1
+            if event.key == pygame.K_d:
+                tower = -1
+
+        # for hand control
+        game.connection.send_action(103, [move, turn, tower, shot, False])
 
     # DISPLAY.blit(coll_map, (DISPLAY.get_width() // 2, 0))
     # DISPLAY.blit(features_nn, (0, DISPLAY.get_height() // 2))
